@@ -10,28 +10,28 @@ window.LAB_ROBOTS=[
 //  {id:"mir",name:"MiR250",maker:"Mobile Industrial Robots",type:"Autonomous mobile robot",cell:"FLOOR",axes:0,payload:"250 kg",reach:"—",repeat:"±50 mm docking",ctrl:"MiR onboard PC",ip:"192.168.12.20",sw:"MiR Robot Interface 3",sdk:"REST API v2.0",art:"amr",docFile:"docs/mir.md"},
 //  {id:"ned2",name:"Ned2",maker:"Niryo",type:"Educational arm",cell:"CELL C2",axes:6,payload:"0.3 kg",reach:"490 mm",repeat:"±0.5 mm",ctrl:"Raspberry Pi 4 (onboard)",ip:"192.168.10.51",sw:"Niryo Studio",sdk:"pyniryo (Python)",art:"arm",docFile:"docs/ned2.md"},
 //  {id:"rebel",name:"ReBeL 6DOF",maker:"igus",type:"Low-cost cobot",cell:"CELL D1",axes:6,payload:"2 kg",reach:"664 mm",repeat:"±1 mm",ctrl:"igus Robot Control",ip:"192.168.10.61",sw:"iRC software",sdk:"CRI interface / ROS 2",art:"arm",docFile:"docs/rebel.md"},
-{id:"wavego",name:"WAVEGO EX Bionic Dog",maker:"Waveshare",type:"Legged robot (quadruped)",cell:"FLOOR",axes:12,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"ESP32 (verify)",ip:"192.168.10.51",sw:"Waveshare factory firmware",sdk:"Wi-Fi web UI (HTTP, port 80)",art:"dog",docFile:"docs/wavego.md"},
-{id:"galaxyrvr",name:"Galaxy RVR Mars Rover",maker:"SunFounder",type:"Mobile rover (6 wheels)",cell:"FLOOR",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Arduino Uno R3 + ESP32-CAM (verify)",ip:"192.168.10.52",sw:"SunFounder Arduino firmware",sdk:"SunFounder Controller app / WebSocket (port 8765, verify)",art:"rover6",docFile:"docs/galaxy-rvr.md"},
-{id:"rasprover",name:"RaspRover (tracked, with arm)",maker:"Waveshare",type:"Mobile manipulator (tracked)",cell:"FLOOR",axes:4,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"NVIDIA Jetson + ESP32 driver board",ip:"192.168.10.53",sw:"Ubuntu (JetPack) + Waveshare UGV app",sdk:"JSON commands via UART / HTTP; web UI port 5000, JupyterLab 8888 (verify)",art:"tracked",docFile:"docs/rasprover.md"},
-{id:"ddchassis",name:"Double-Deck Robot Chassis",maker:"BerryBase",type:"Robot chassis (2-level, wheeled)",cell:"BENCH",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"None fitted (e.g. Raspberry Pi + motor driver)",ip:"192.168.10.54",sw:"Depends on fitted controller",sdk:"GPIO / PWM (gpiozero) if Raspberry Pi fitted",art:"chassis",docFile:"docs/double-deck-chassis.md"},
+{id:"wavego",name:"WAVEGO EX Bionic Dog",maker:"Waveshare",type:"Legged robot (quadruped)",cell:"FLOOR",axes:12,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"ESP32 (verify)",ip:"192.168.10.51",sw:"Waveshare factory firmware",sdk:"Wi-Fi web UI (HTTP, port 80)",art:"wavego_bionic",docFile:"docs/wavego.md"},
+{id:"galaxyrvr",name:"Galaxy RVR Mars Rover",maker:"SunFounder",type:"Mobile rover (6 wheels)",cell:"FLOOR",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Arduino Uno R3 + ESP32-CAM (verify)",ip:"192.168.10.52",sw:"SunFounder Arduino firmware",sdk:"SunFounder Controller app / WebSocket (port 8765, verify)",art:"galaxy_rvr_rover",docFile:"docs/galaxy-rvr.md"},
+{id:"rasprover",name:"RaspRover (tracked, with arm)",maker:"Waveshare",type:"Mobile manipulator (tracked)",cell:"FLOOR",axes:4,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"NVIDIA Jetson + ESP32 driver board",ip:"192.168.10.53",sw:"Ubuntu (JetPack) + Waveshare UGV app",sdk:"JSON commands via UART / HTTP; web UI port 5000, JupyterLab 8888 (verify)",art:"rasprover_tracked",docFile:"docs/rasprover.md"},
+{id:"ddchassis",name:"Double-Deck Robot Chassis",maker:"BerryBase",type:"Robot chassis (2-level, wheeled)",cell:"BENCH",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"None fitted (e.g. Raspberry Pi + motor driver)",ip:"192.168.10.54",sw:"Depends on fitted controller",sdk:"GPIO / PWM (gpiozero) if Raspberry Pi fitted",art:"berrybase_chassis",docFile:"docs/double-deck-chassis.md"},
 {id:"lidarbot",name:"LiDAR Bot AGV with Mecanum Wheels",maker:"M5Stack",type:"Mobile AGV (mecanum)",cell:"FLOOR",axes:0,payload:"PAYLOAD",reach:"PAYLOAD",repeat:"REACH",ctrl:"M5Stack Core (ESP32)",ip:"192.168.10.55",sw:"Arduino / UIFlow firmware",sdk:"USB serial; ESP-NOW remote (Wi-Fi only with custom firmware)",art:"mecanum",docFile:"docs/lidarbot.md"},
-{id:"so101",name:"SO-ARM101",maker:"TheRobotStudio / Hugging Face (open source)",type:"Robotic arm (stationary)",cell:"TABLE",axes:6,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Feetech STS3215 bus servos + USB servo adapter",ip:"USB (host PC)",sw:"LeRobot (Python)",sdk:"Feetech serial bus protocol / LeRobot API",art:"arm",docFile:"docs/so-arm101.md"},
-{id:"wheelleg",name:"Mini Wheeled-Legged Robot",maker:"StackForce",type:"Hybrid mobile robot (wheel-leg)",cell:"FLOOR",axes:6,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"ESP32 (verify)",ip:"192.168.10.57",sw:"StackForce factory firmware",sdk:"Vendor app / remote (verify)",art:"wheelleg",docFile:"docs/wheeled-legged.md"},
-{id:"dancebot",name:"Dancing Robot",maker:"Playtastic",type:"Humanoid toy robot (bipedal)",cell:"SHELF",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Built-in toy electronics",ip:"—",sw:"Factory firmware",sdk:"None (buttons / remote)",art:"humanoid",docFile:"docs/dancing-robot.md"},
-{id:"tb3",name:"TurtleBot3 Burger",maker:"ROBOTIS",type:"Mobile robot (ROS)",cell:"FLOOR",axes:0,payload:"15 kg",reach:"0.22 m/s",repeat:"—",ctrl:"Raspberry Pi + OpenCR",ip:"192.168.100.50",sw:"ROS Melodic + Docker",sdk:"TCP/IP JSON (ports 9997–9999)",art:"tb",docFile:"docs/turtlebot3.md"}
+{id:"so101",name:"SO-ARM101",maker:"TheRobotStudio / Hugging Face (open source)",type:"Robotic arm (stationary)",cell:"TABLE",axes:6,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Feetech STS3215 bus servos + USB servo adapter",ip:"USB (host PC)",sw:"LeRobot (Python)",sdk:"Feetech serial bus protocol / LeRobot API",art:"so_arm",docFile:"docs/so-arm101.md"},
+{id:"wheelleg",name:"Mini Wheeled-Legged Robot",maker:"StackForce",type:"Hybrid mobile robot (wheel-leg)",cell:"FLOOR",axes:6,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"ESP32 (verify)",ip:"192.168.10.57",sw:"StackForce factory firmware",sdk:"Vendor app / remote (verify)",art:"stackforce_wheeled",docFile:"docs/wheeled-legged.md"},
+{id:"dancebot",name:"Dancing Robot",maker:"Playtastic",type:"Humanoid toy robot (bipedal)",cell:"SHELF",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Built-in toy electronics",ip:"—",sw:"Factory firmware",sdk:"None (buttons / remote)",art:"playtastic_humanoid",docFile:"docs/dancing-robot.md"},
+{id:"tb3",name:"TurtleBot3 Burger",maker:"ROBOTIS",type:"Mobile robot (ROS)",cell:"FLOOR",axes:0,payload:"15 kg",reach:"0.22 m/s",repeat:"—",ctrl:"Raspberry Pi + OpenCR",ip:"192.168.100.50",sw:"ROS Melodic + Docker",sdk:"TCP/IP JSON (ports 9997–9999)",art:"turtlebot3",docFile:"docs/turtlebot3.md"}
 ];
 
 // Robot Images
 window.LAB_ART = {
-  dog:      "assets/robots/wavego_bionic.png",        // WAVEGO EX Bionic Dog
-  rover6:   "assets/robots/galaxy_rvr_rover.png",     // Galaxy RVR Mars Rover
-  tracked:  "assets/robots/rasprover_tracked.png",    // RaspRover (tracked + arm)
-  chassis:  "assets/robots/berrybase_chassis.png",    // BerryBase Double-Deck Chassis
-  mecanum:  "assets/robots/mecanum.png",              // M5Stack LiDAR Bot
-  arm:      "assets/robots/so_arm.png",               // SO-ARM101  
-  wheelleg: "assets/robots/stackforce_wheeled.png",   // StackForce Wheeled-Legged
-  humanoid: "assets/robots/playtastic_humanoid.png",  // Playtastic Dancing Robot
-  tb:       "assets/robots/turtlebot3.png",           // Turtlebot3 Burger
+  wavego_bionic:      "assets/robots/wavego_bionic.png",        // WAVEGO EX Bionic Dog
+  galaxy_rvr_rover:   "assets/robots/galaxy_rvr_rover.png",     // Galaxy RVR Mars Rover
+  rasprover_tracked:  "assets/robots/rasprover_tracked.png",    // RaspRover (tracked + arm)
+  berrybase_chassis:  "assets/robots/berrybase_chassis.png",    // BerryBase Double-Deck Chassis
+  mecanum:            "assets/robots/mecanum.png",              // M5Stack LiDAR Bot
+  so_arm:      "assets/robots/so_arm.png",               // SO-ARM101  
+  stackforce_wheeled: "assets/robots/stackforce_wheeled.png",   // StackForce Wheeled-Legged
+  playtastic_humanoid: "assets/robots/playtastic_humanoid.png",  // Playtastic Dancing Robot
+  turtlebot3:       "assets/robots/turtlebot3.png",           // Turtlebot3 Burger
 };
 
 

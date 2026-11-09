@@ -149,10 +149,9 @@ The tiles and the availability board are built from `frontend/js/robots.js`:
 
 1. Copy `frontend/docs/_TEMPLATE.md` to `frontend/docs/<id>.md` and fill it in.
 2. Add an entry with the same `id` to `frontend/js/robots.js`.
+3. Add an images to the `frontend/assets/robots/<robot_name>.png`
+4. Associate the image path with the same `art` in the function `window.LAB_ART` at `frontend/js/robots.js`
 
-## Logo
-
-The header shows `frontend/assets/fhtw-logo.png`. To replace it, save a new PNG with the same name (about 160 px high, white or transparent background).
 
 ## Direct links
 
