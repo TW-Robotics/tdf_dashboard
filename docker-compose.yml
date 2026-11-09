@@ -1,0 +1,17 @@
+services:
+  robot-lab:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - lab-data:/data
+    environment:
+      # Admin password for http://<server>:8080/admin/ – change this!
+      LAB_ADMIN_TOKEN: "change-me"
+      # Set to "1" to let everyone book robots from the main dashboard
+      LAB_PUBLIC_EDIT: "0"
+      # Development mode (no token) is off under Docker; "1" skips the token
+      LAB_DEV_MODE: "0"
+    restart: unless-stopped
+volumes:
+  lab-data:

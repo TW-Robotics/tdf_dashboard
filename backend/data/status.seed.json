@@ -1,0 +1,5 @@
+{
+  "kr6": { "state": "use", "person": "Person XYZ", "note": "Pick-and-place exercise" },
+  "fr3": { "state": "use", "person": "Person XYZ", "note": "Force control tests" },
+  "tb3": { "state": "use", "person": "Person XYZ", "note": "TCP/IP motion test" }
+}
