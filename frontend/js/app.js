@@ -66,7 +66,8 @@ function renderStatus(){
    <div class="legend"><span class="pill free"><i></i>Free – ready to book</span><span class="pill use"><i></i>Busy – using by a named person</span><span class="pill occ"><i></i>Occupied – maintenance, course or blocked</span>${filter!=="all"?`<button class="btn" id="clr">Show all</button>`:""}</div>
    ${liveOk?"":`<p class="note-bar" id="offNote">Server not reachable: changes are saved in this browser only.</p>`}
    <div class="board">${list.map(r=>{const s=st(r.id),d=STATES[s.state];
-     const who=s.state==="use"?`Using by <strong>${esc(s.person||"Unknown")}</strong>`:s.state==="occ"?esc(s.note||"Occupied"):"Available";
+     const until = s.date ? ` until ${fmtDate(s.date)}` : "";
+     const who=s.state==="use"?`@ <strong>${esc(s.person||"Unknown")}</strong>${until}`:s.state==="occ"?esc(s.note||"Occupied"):"Available";
      return `<button class="st ${d.cls}${canEdit?"":" ro"}" data-id="${r.id}" ${canEdit?"":`aria-disabled="true" tabindex="-1"`}>
        <div class="row"><span class="cellid">${r.cell}</span>${pill(r.id)}</div>
        <h3>${esc(r.name)}</h3>
@@ -77,6 +78,12 @@ function renderStatus(){
   document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{filter=filter===b.dataset.f?"all":b.dataset.f;renderStatus()});
   const c=$("#clr");if(c)c.onclick=()=>{filter="all";renderStatus()};
   if(canEdit)document.querySelectorAll(".st").forEach(b=>b.onclick=()=>openDlg(b.dataset.id));
+}
+
+function fmtDate(isoStr) {
+  if (!isoStr) return "";
+  const [y, m, d] = isoStr.split("-");
+  return `${d}.${m}.${y}`;
 }
 
 function openDlg(id){

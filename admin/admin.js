@@ -7,7 +7,7 @@
 
   let token = "";
   let server = {};          // last status from the server
-  const drafts = {};        // id -> {state, person, note} edited but not saved
+  const drafts = {};        // id -> {state, person, date, note} edited but not saved
 
   try { token = sessionStorage.getItem("lab-admin-token") || ""; } catch (_) {}
 
@@ -33,11 +33,17 @@
     const h = Math.round(m / 60);
     return h < 24 ? h + " h ago" : Math.round(h / 24) + " d ago";
   }
-  const current = (id) => drafts[id] || { state: "free", person: "", note: "", ...(server[id] || {}) };
+  const current = (id) => drafts[id] || { state: "free", person: "", date: "", note: "", ...(server[id] || {}) };
+  
   const isDirty = (id) => {
     if (!drafts[id]) return false;
-    const s = { state: "free", person: "", note: "", ...(server[id] || {}) }, d = drafts[id];
-    return s.state !== d.state || (s.person || "") !== d.person.trim() || (s.note || "") !== d.note.trim();
+    const s = { state: "free", person: "", date: "", note: "", ...(server[id] || {}) }, d = drafts[id];
+    return (
+      s.state !== d.state || 
+      (s.person || "") !== d.person.trim() || 
+      (s.date || "") !== (d.date || "") || 
+      (s.note || "") !== d.note.trim()
+    );
   };
 
   /* ---------- sign-in ---------- */
@@ -99,6 +105,7 @@
         ${["free", "use", "occ"].map((k) => `<button type="button" class="${k}" data-k="${k}" aria-pressed="${c.state === k}">${LABELS[k]}</button>`).join("")}
       </div></td>
       <td><input id="p-${r.id}" data-f="person" maxlength="60" placeholder="e.g. Person XYZ" value="${esc(c.state === "use" ? c.person : "")}" ${c.state === "use" ? "" : "disabled"} aria-label="Person using ${esc(r.name)}"></td>
+      <td><input type="date" id="d-${r.id}" data-f="date" value="${esc(c.state === "use" ? c.date : "")}" ${c.state === "use" ? "" : "disabled"} aria-label="Date for ${esc(r.name)}"></td>
       <td><input id="n-${r.id}" data-f="note" maxlength="80" placeholder="${c.state === "occ" ? "e.g. Maintenance" : "Optional"}" value="${esc(c.state === "free" ? "" : c.note)}" ${c.state === "free" ? "disabled" : ""} aria-label="Note for ${esc(r.name)}"></td>
       <td class="since">${s.state ? ago(s.since) : "—"}</td>
       <td class="row-save"><button type="button" class="btn primary" data-save ${isDirty(r.id) ? "" : "disabled"}>Save</button></td>
@@ -107,14 +114,38 @@
   function render() {
     renderSummary();
     const focused = document.activeElement && document.activeElement.id;
+    const selectionStart = document.activeElement?.selectionStart;
+    const selectionEnd = document.activeElement?.selectionEnd;
+
     $("#rows").innerHTML = ROBOTS.map(rowHTML).join("");
-    if (focused) { const el = document.getElementById(focused); if (el) { el.focus(); const v = el.value; el.value = ""; el.value = v; } }
+    
+    if (focused) { 
+      const el = document.getElementById(focused); 
+      if (el) { 
+        el.focus(); 
+        if (typeof el.setSelectionRange === 'function' && selectionStart != null) {
+          try { el.setSelectionRange(selectionStart, selectionEnd); } catch(_) {}
+        }
+      } 
+    }
   }
   function rerenderRow(id) {
     const tr = document.querySelector(`tr[data-id="${id}"]`);
     const focused = document.activeElement && document.activeElement.id;
+    const selectionStart = document.activeElement?.selectionStart;
+    const selectionEnd = document.activeElement?.selectionEnd;
+
     tr.outerHTML = rowHTML(ROBOTS.find((r) => r.id === id));
-    if (focused) { const el = document.getElementById(focused); if (el) el.focus(); }
+    
+    if (focused) { 
+      const el = document.getElementById(focused); 
+      if (el) {
+        el.focus();
+        if (typeof el.setSelectionRange === 'function' && selectionStart != null) {
+          try { el.setSelectionRange(selectionStart, selectionEnd); } catch(_) {}
+        }
+      } 
+    }
   }
 
   /* ---------- interactions ---------- */
@@ -124,8 +155,13 @@
     const id = tr.dataset.id;
     const seg = e.target.closest(".seg button");
     if (seg) {
-      const d = { ...current(id), state: seg.dataset.k };
-      if (d.state === "free") { d.person = ""; d.note = ""; }
+      const currentState = current(id);
+      const d = { 
+        ...currentState, 
+        state: seg.dataset.k,
+        date: seg.dataset.k === "use" ? currentState.date : "" 
+      };
+      if (d.state === "free") { d.person = ""; d.date = ""; d.note = ""; }
       drafts[id] = d;
       rerenderRow(id);
       if (d.state === "use") document.getElementById("p-" + id).focus();
@@ -133,6 +169,7 @@
     }
     if (e.target.closest("[data-save]")) save(id);
   });
+  
   $("#rows").addEventListener("input", (e) => {
     const tr = e.target.closest("tr[data-id]");
     if (!tr || !e.target.dataset.f) return;
@@ -142,6 +179,7 @@
     tr.querySelector("[data-save]").disabled = !isDirty(id);
     e.target.classList.remove("bad");
   });
+  
   $("#rows").addEventListener("keydown", (e) => {
     if (e.key === "Enter" && e.target.tagName === "INPUT") {
       const id = e.target.closest("tr").dataset.id;
@@ -164,7 +202,12 @@
     try {
       const r = await api("/api/status/" + encodeURIComponent(id), {
         method: "PUT",
-        body: JSON.stringify({ state: d.state, person: d.person.trim(), note: d.note.trim() }),
+        body: JSON.stringify({ 
+          state: d.state, 
+          person: d.person.trim(), 
+          date: d.date, 
+          note: d.note.trim() 
+        }),
       });
       if (r.status === 403) return showLogin("Your session has expired. Sign in again.");
       if (!r.ok) throw new Error(await r.text());
