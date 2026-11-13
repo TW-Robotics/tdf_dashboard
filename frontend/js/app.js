@@ -63,7 +63,7 @@ function renderStatus(){
    <div class="summary">
      ${["free","use","occ"].map(k=>`<button class="sum ${k}" data-f="${k}" aria-pressed="${filter===k}"><span>${k==="free"?"Free":k==="use"?"Busy (in use by a person)":"Occupied / out of service"}</span><b>${n[k]}</b></button>`).join("")}
    </div>
-   <div class="legend"><span class="pill free"><i></i>Free – ready to book</span><span class="pill use"><i></i>Busy – using by a named person</span><span class="pill occ"><i></i>Occupied – maintenance, course or blocked</span>${filter!=="all"?`<button class="btn" id="clr">Show all</button>`:""}</div>
+   <div class="legend"><span class="pill free"><i></i>Free –ß ready to book</span><span class="pill use"><i></i>Busy – using by a named person</span><span class="pill occ"><i></i>Occupied – maintenance, course or blocked</span>${filter!=="all"?`<button class="btn" id="clr">Show all</button>`:""}</div>
    ${liveOk?"":`<p class="note-bar" id="offNote">Server not reachable: changes are saved in this browser only.</p>`}
    <div class="board">${list.map(r=>{const s=st(r.id),d=STATES[s.state];
      const until = s.date ? ` until ${fmtDate(s.date)}` : "";
