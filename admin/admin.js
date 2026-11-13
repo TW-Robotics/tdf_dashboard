@@ -2,6 +2,30 @@
 (function () {
   const ROBOTS = window.LAB_ROBOTS || [];
   const LABELS = { free: "Free", use: "Busy", occ: "Occupied" };
+  // People who can be responsible for a robot (can be overridden with window.LAB_PEOPLE)
+  const PEOPLE = window.LAB_PEOPLE || [
+    "FH-Prof. Dr.techn. Mohamed Aburaia, MSc",
+    "Dr. Techn. Zlatan Ajanovic",
+    "Nikolaus Angel, MSc",
+    "Dipl.-Ing. Angela Blaha, B.Sc.",
+    "Radu-Dionisie Curcean",
+    "Felix Dauser, BSc",
+    "Dragana Dimitrijevic, MSc",
+    "Amr Eltabakh, MSc.",
+    "Florian Faber, B.Sc.",
+    "Robert Fellner, MSc",
+    "Dipl.-Ing. Bernhard Neuberger, BSc.",
+    "Horst Orsolits, MSc",
+    "Lucas Sebastian Pammer, MSc.",
+    "Dr. techn. Surya Kannan Peesapati",
+    "Michael Schebek, MSc",
+    "Alessandro Scherl, MSc.",
+    "Simon Schwaiger, MSc",
+    "David Seyser, BSc",
+    "Andreas Steinbichler, BSc",
+    "Cedric Michael Steininger",
+    "DI Dr. Kemajl Stuja",
+  ];
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -97,6 +121,16 @@
     $("#summary").innerHTML = ["free", "use", "occ"]
       .map((k) => `<div class="sum ${k}"><span>${LABELS[k]}</span><b>${n[k]}</b></div>`).join("");
   }
+  function personSelect(r, c) {
+    // Always selectable: picking a person switches the robot to Busy (see change handler)
+    const val = c.state === "use" ? (c.person || "").trim() : "";
+    // keep a saved name that is no longer in the list, so it is not lost
+    const names = val && !PEOPLE.includes(val) ? [val, ...PEOPLE] : PEOPLE;
+    const opts = [`<option value="">Select person…</option>`]
+      .concat(names.map((n) => `<option value="${esc(n)}"${n === val ? " selected" : ""}>${esc(n)}</option>`))
+      .join("");
+    return `<select id="p-${r.id}" data-f="person" aria-label="Person using ${esc(r.name)}">${opts}</select>`;
+  }
   function rowHTML(r) {
     const c = current(r.id), s = server[r.id] || {};
     return `<tr data-id="${r.id}" class="${isDirty(r.id) ? "dirty" : ""}">
@@ -104,7 +138,7 @@
       <td><div class="seg" role="group" aria-label="Status of ${esc(r.name)}">
         ${["free", "use", "occ"].map((k) => `<button type="button" class="${k}" data-k="${k}" aria-pressed="${c.state === k}">${LABELS[k]}</button>`).join("")}
       </div></td>
-      <td><input id="p-${r.id}" data-f="person" maxlength="60" placeholder="e.g. Person XYZ" value="${esc(c.state === "use" ? c.person : "")}" ${c.state === "use" ? "" : "disabled"} aria-label="Person using ${esc(r.name)}"></td>
+      <td>${personSelect(r, c)}</td>
       <td><input type="date" id="d-${r.id}" data-f="date" value="${esc(c.state === "use" ? c.date : "")}" ${c.state === "use" ? "" : "disabled"} aria-label="Date for ${esc(r.name)}"></td>
       <td><input id="n-${r.id}" data-f="note" maxlength="80" placeholder="${c.state === "occ" ? "e.g. Maintenance" : "Optional"}" value="${esc(c.state === "free" ? "" : c.note)}" ${c.state === "free" ? "disabled" : ""} aria-label="Note for ${esc(r.name)}"></td>
       <td class="since">${s.state ? ago(s.since) : "—"}</td>
@@ -170,15 +204,22 @@
     if (e.target.closest("[data-save]")) save(id);
   });
   
-  $("#rows").addEventListener("input", (e) => {
+  // "change" covers <select> in all browsers; "input" covers text and date fields
+  ["input", "change"].forEach((ev) => $("#rows").addEventListener(ev, (e) => {
     const tr = e.target.closest("tr[data-id]");
     if (!tr || !e.target.dataset.f) return;
     const id = tr.dataset.id;
     drafts[id] = { ...current(id), [e.target.dataset.f]: e.target.value };
+    // choosing a person on a Free / Occupied robot makes it Busy
+    if (e.target.dataset.f === "person" && e.target.value && drafts[id].state !== "use") {
+      drafts[id].state = "use";
+      rerenderRow(id);
+      return;
+    }
     tr.classList.toggle("dirty", isDirty(id));
     tr.querySelector("[data-save]").disabled = !isDirty(id);
     e.target.classList.remove("bad");
-  });
+  }));
   
   $("#rows").addEventListener("keydown", (e) => {
     if (e.key === "Enter" && e.target.tagName === "INPUT") {
@@ -194,7 +235,7 @@
       const p = document.getElementById("p-" + id);
       p.classList.add("bad");
       p.focus();
-      return toast(`Enter who is using ${name}.`, true);
+      return toast(`Select who is using ${name}.`, true);
     }
     const btn = document.querySelector(`tr[data-id="${id}"] [data-save]`);
     btn.disabled = true;

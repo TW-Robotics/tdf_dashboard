@@ -46,13 +46,13 @@ window.LAB_ART = {
   playtastic_humanoid: "assets/robots/playtastic_humanoid.png",  // Playtastic Dancing Robot
   turtlebot3:       "assets/robots/turtlebot3.png",           // Turtlebot3 Burger
   hexapod:      "assets/robots/hexapod.png",       // Robotis Dynamixel Hexapod MKII
-  taurob:  "assets/robots/taurob.png",   // Taurob Tracker
-  zelos:      "assets/robots/tracked.png",       // Zelos
+  taurob:       "assets/robots/taurob.png",   // Taurob Tracker
+  zelos:        "assets/robots/tracked.png",       // Zelos
   mir_ur5:      "assets/robots/mir_ur5.png",       // MiR with UR5
   humanoid:     "assets/robots/humanoid.png",      // Unitree G1 EDU U2 Advanced
   robotino:     "assets/robots/robotino.png",      // Festo Robotino 3
   kuka_kr16:    "assets/robots/kuka_kr16.png",     // KUKA KR 16-2
-  wittmann:       "assets/robots/wittmann.png",        // Wittmann W818-2058
+  wittmann:     "assets/robots/wittmann.png",        // Wittmann W818-2058
   ur5:          "assets/robots/ur5.png",           // UR5
   abb_gofa:     "assets/robots/abb_gofa.png",      // ABB CRB 15000 (GoFa)
   kuka_kr6:     "assets/robots/kuka_kr6.png",      // KUKA KR 6 R900 sixx
