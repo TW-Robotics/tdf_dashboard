@@ -10,7 +10,7 @@ Autonomous mobile robot (AMR) from Mobile Industrial Robots with a Universal Rob
 | **Location** | FLOOR |
 | **MiR model** | MODEL – check the type plate (e.g. MiR100 / MiR200 / MiR250) |
 | **Platform payload** | PAYLOAD (depends on MiR model) |
-| **Arm** | UR5 – 6 axes, 5 kg, 850 mm reach, ±0.1 mm repeatability (see [ur5.md](ur5.md)) |
+| **Arm** | UR5 – 6 axes, 5 kg, 850 mm reach, ±0.1 mm repeatability (see [UR5](#doc-ur5)) |
 | **Controller** | MiR onboard PC + UR controller (verify) |
 | **IP address** | 192.168.10.59 |
 | **Software** | MiR Robot software (web interface) + PolyScope on the UR |

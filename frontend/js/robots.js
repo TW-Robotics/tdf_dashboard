@@ -20,13 +20,13 @@ window.LAB_ROBOTS=[
 {id:"dancebot",name:"Dancing Robot",maker:"Playtastic",type:"Humanoid toy robot (bipedal)",cell:"SHELF",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Built-in toy electronics",ip:"—",sw:"Factory firmware",sdk:"None (buttons / remote)",art:"playtastic_humanoid",docFile:"docs/dancing-robot.md"},
 {id:"tb3",name:"TurtleBot3 Burger",maker:"ROBOTIS",type:"Mobile robot (ROS)",cell:"FLOOR",axes:0,payload:"15 kg",reach:"0.22 m/s",repeat:"—",ctrl:"Raspberry Pi + OpenCR",ip:"192.168.100.50",sw:"ROS Melodic + Docker",sdk:"TCP/IP JSON (ports 9997–9999)",art:"turtlebot3",docFile:"docs/turtlebot3.md"},
 {id:"hexapod",name:"Robotis Dynamixel Hexapod MKII",maker:"Interbotix / ROBOTIS",type:"Legged robot (hexapod)",cell:"FLOOR",axes:18,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"ArbotiX-M (verify)",ip:"192.168.10.56",sw:"Interbotix hexapod firmware (verify)",sdk:"Dynamixel Protocol 1.0 via Arduino IDE (verify)",art:"hexapod",docFile:"docs/hexapod.md"},
-{id:"taurob",name:"Taurob - Sieglinde",maker:"taurob",type:"Tracked mobile manipulator (prototype)",cell:"FLOOR",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Onboard PC (verify)",ip:"192.168.10.57",sw:"Ubuntu + ROS (verify)",sdk:"ROS topics/services (verify)",art:"tracked_arm",docFile:"docs/taurob.md"},
-{id:"zelos",name:"Zelos",maker:"Not specified",type:"Tracked mobile robot (prototype)",cell:"FLOOR",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Not specified",ip:"192.168.10.58",sw:"Not specified",sdk:"Not specified",art:"tracked",docFile:"docs/zelos.md"},
+{id:"taurob",name:"Taurob - Sieglinde",maker:"taurob",type:"Tracked mobile manipulator (prototype)",cell:"FLOOR",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Onboard PC (verify)",ip:"192.168.10.57",sw:"Ubuntu + ROS (verify)",sdk:"ROS topics/services (verify)",art:"taurob",docFile:"docs/taurob.md"},
+{id:"zelos",name:"Zelos",maker:"Not specified",type:"Tracked mobile robot (prototype)",cell:"FLOOR",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Not specified",ip:"192.168.10.58",sw:"Not specified",sdk:"Not specified",art:"zelos",docFile:"docs/zelos.md"},
 {id:"mir",name:"MiR with UR5",maker:"Mobile Industrial Robots (MiR)",type:"Mobile manipulator (AMR + UR5 arm)",cell:"FLOOR",axes:6,payload:"PAYLOAD",reach:"850 mm (UR5)",repeat:"±0.1 mm (UR5)",ctrl:"MiR onboard PC + UR controller (verify)",ip:"192.168.10.59",sw:"MiR Robot software + PolyScope",sdk:"MiR REST API (port 80) + URScript / RTDE (port 30004)",art:"mir_ur5",docFile:"docs/mir.md"},
 {id:"g1",name:"Unitree G1 EDU U2 Advanced",maker:"Unitree Robotics",type:"Humanoid robot (bipedal)",cell:"FLOOR",axes:29,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Onboard motion controller + NVIDIA Jetson Orin (EDU)",ip:"192.168.10.60",sw:"Unitree firmware + Ubuntu on Jetson (verify)",sdk:"unitree_sdk2 (DDS) / ROS 2 (unitree_ros2)",art:"humanoid",docFile:"docs/unitree-g1.md"},
 {id:"robotino3",name:"Festo Robotino 3",maker:"Festo",type:"Educational robot (holonomic, omni-wheels)",cell:"FLOOR",axes:0,payload:"PAYLOAD",reach:"REACH",repeat:"—",ctrl:"Embedded PC (Linux)",ip:"192.168.10.61",sw:"Robotino OS + Robotino View",sdk:"Robotino REST API / API2 (C++, Python) / ROS (verify)",art:"robotino",docFile:"docs/robotino3.md"},
 {id:"kr16",name:"KUKA KR 16-2",maker:"KUKA",type:"Industrial robotic arm (6-axis)",cell:"CELL",axes:6,payload:"16 kg",reach:"1611 mm",repeat:"±0.04 mm (verify)",ctrl:"KR C4 (verify; KR C2 on older units)",ip:"192.168.10.62",sw:"KUKA System Software (KSS)",sdk:"KRL; KUKA.RSI / EthernetKRL (options)",art:"kuka_kr16",docFile:"docs/kuka-kr16.md"},
-{id:"w818",name:"Wittmann W818-2058",maker:"WITTMANN",type:"Cartesian gantry robot (3-axis)",cell:"CELL",axes:3,payload:"6 kg",reach:"REACH",repeat:"—",ctrl:"WITTMANN R8/R9 (verify)",ip:"192.168.10.63",sw:"WITTMANN teach software (verify)",sdk:"Euromap 67 machine interface (verify)",art:"gantry",docFile:"docs/wittmann-w818.md"},
+{id:"w818",name:"Wittmann W818-2058",maker:"WITTMANN",type:"Cartesian gantry robot (3-axis)",cell:"CELL",axes:3,payload:"6 kg",reach:"REACH",repeat:"—",ctrl:"WITTMANN R8/R9 (verify)",ip:"192.168.10.63",sw:"WITTMANN teach software (verify)",sdk:"Euromap 67 machine interface (verify)",art:"wittmann",docFile:"docs/wittmann-w818.md"},
 {id:"ur5",name:"UR5",maker:"Universal Robots",type:"Collaborative robotic arm (6-axis)",cell:"CELL",axes:6,payload:"5 kg",reach:"850 mm",repeat:"±0.1 mm",ctrl:"UR CB3 (verify; e-Series if UR5e)",ip:"192.168.10.64",sw:"PolyScope",sdk:"URScript / RTDE (port 30004), Dashboard server (port 29999)",art:"ur5",docFile:"docs/ur5.md"},
 {id:"gofa",name:"ABB CRB 15000-5/0.95 (GoFa)",maker:"ABB",type:"Collaborative robotic arm (6-axis)",cell:"CELL",axes:6,payload:"5 kg",reach:"950 mm",repeat:"±0.05 mm",ctrl:"OmniCore C30",ip:"192.168.10.65",sw:"RobotWare 7",sdk:"RAPID; Robot Web Services (REST) / EGM",art:"abb_gofa",docFile:"docs/abb-gofa.md"},
 {id:"kr6",name:"KUKA KR 6 R900 sixx",maker:"KUKA",type:"Industrial robotic arm (6-axis)",cell:"CELL",axes:6,payload:"6 kg",reach:"901 mm",repeat:"±0.03 mm",ctrl:"KR C4 compact (verify)",ip:"192.168.10.66",sw:"KUKA System Software 8.x (verify)",sdk:"KRL; KUKA.RSI / EthernetKRL (options)",art:"kuka_kr6",docFile:"docs/kuka-kr6.md"},
@@ -46,13 +46,13 @@ window.LAB_ART = {
   playtastic_humanoid: "assets/robots/playtastic_humanoid.png",  // Playtastic Dancing Robot
   turtlebot3:       "assets/robots/turtlebot3.png",           // Turtlebot3 Burger
   hexapod:      "assets/robots/hexapod.png",       // Robotis Dynamixel Hexapod MKII
-  tracked_arm:  "assets/robots/tracked_arm.png",   // Taurob Tracker
-  tracked:      "assets/robots/tracked.png",       // Zelos
+  taurob:  "assets/robots/taurob.png",   // Taurob Tracker
+  zelos:      "assets/robots/tracked.png",       // Zelos
   mir_ur5:      "assets/robots/mir_ur5.png",       // MiR with UR5
   humanoid:     "assets/robots/humanoid.png",      // Unitree G1 EDU U2 Advanced
   robotino:     "assets/robots/robotino.png",      // Festo Robotino 3
   kuka_kr16:    "assets/robots/kuka_kr16.png",     // KUKA KR 16-2
-  gantry:       "assets/robots/gantry.png",        // Wittmann W818-2058
+  wittmann:       "assets/robots/wittmann.png",        // Wittmann W818-2058
   ur5:          "assets/robots/ur5.png",           // UR5
   abb_gofa:     "assets/robots/abb_gofa.png",      // ABB CRB 15000 (GoFa)
   kuka_kr6:     "assets/robots/kuka_kr6.png",      // KUKA KR 6 R900 sixx
