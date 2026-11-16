@@ -11,76 +11,32 @@
 <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-<header class="top">
-  <div class="wrap">
-    <a class="logo" href="/" aria-label="Back to the dashboard">
-      <span class="logo-mark"><img src="/assets/fhtw-logo.png" alt="FH Technikum Wien" onerror="this.replaceWith('FHTW')"></span>
-      <span class="logo-text"><b>Digital Factory Lab</b><span>Admin · Robot usage</span></span>
-    </a>
-    <div class="top-right">
-      <a class="admin-link" href="/">Dashboard</a>
-      <button class="admin-link" id="logout" type="button" hidden>Sign out</button>
-    </div>
-  </div>
-</header>
-
-<main>
-  <div class="wrap">
-
-    <!-- Sign-in -->
-    <section id="login" class="login-card" hidden>
-      <h1>Admin sign-in</h1>
-      <p>Enter the admin token to change which robots are free, busy or occupied.</p>
-      <form id="loginForm">
-        <label class="field" for="tokenIn">Admin token<input id="tokenIn" type="password" autocomplete="current-password" required></label>
-        <p class="err" id="loginErr" hidden></p>
-        <button class="btn primary" type="submit">Sign in</button>
-      </form>
-    </section>
-
-    <!-- Panel -->
-    <section id="panel" hidden>
-      <div class="dev-banner" id="devBanner" hidden><strong>Development mode</strong><span>No admin token is needed. Start the server with <code>LAB_DEV_MODE=0</code> (or use Docker) to require it.</span></div>
-      <div class="page-head">
-        <div>
-          <h1>Robot usage</h1>
-          <p>Set each robot to Free, Busy (with the person using it) or Occupied. Changes appear on every dashboard within 5 seconds.</p>
-        </div>
-        <div class="head-actions">
-          <button class="btn" id="resetAll" type="button">Set all to Free</button>
-        </div>
-      </div>
-
-      <div class="confirm" id="confirm" hidden>
-        <span>Set all robots to Free? This clears every person and note.</span>
-        <button class="btn" id="confirmNo" type="button">Cancel</button>
-        <button class="btn danger" id="confirmYes" type="button">Set all to Free</button>
-      </div>
-
-      <div class="summary" id="summary"></div>
-
-      <div class="admin-table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr><th>Robot</th><th>Status</th><th>Responsible Person</th> <th>Until</th><th>Note / reason</th><th>Since</th><th></th></tr>
-          </thead>
-          <tbody id="rows"></tbody>
-        </table>
-      </div>
-      <p class="toast" id="toast" role="status" aria-live="polite"></p>
-    </section>
-
-  </div>
-</main>
-
-<footer>
-  <div class="wrap">
-    <span>© 2026 Dr. Kannan Peesapati. All rights reserved.</span>
-    <span>Digital Factory Lab · FH Technikum Wien</span>
-  </div>
-</footer>
-
-<script src="/js/robots.js"></script>
+<header class="top"><div class="wrap">
+  <a class="logo" href="/" aria-label="Back to the dashboard"><span class="logo-mark"><img src="/assets/fhtw-logo.png" alt="FH Technikum Wien" onerror="this.replaceWith('FHTW')"></span><span class="logo-text"><b>Digital Factory Lab</b><span>Admin · Inventory &amp; usage</span></span></a>
+  <div class="top-right"><a class="admin-link" href="/">Dashboard</a><button class="admin-link" id="logout" type="button" hidden>Sign out</button></div>
+</div></header>
+<main><div class="wrap">
+  <section id="login" class="login-card" hidden>
+    <h1>Admin sign-in</h1><p>Manage individual robots, their users and availability.</p>
+    <form id="loginForm"><label class="field">Admin token<input id="tokenIn" type="password" autocomplete="current-password" required></label><p class="err" id="loginErr" role="alert" hidden></p><button class="btn primary" type="submit">Sign in</button></form>
+  </section>
+  <section id="panel" hidden>
+    <div class="dev-banner" id="devBanner" hidden><strong>Development mode</strong><span>No admin token is needed.</span></div>
+    <p class="note-bar connection-note" id="adminConnection" role="status" hidden>Server unavailable. Showing the last known inventory; editing is temporarily unavailable.</p>
+    <nav class="admin-tabs" aria-label="Administration">
+      <button type="button" class="btn" data-view="usage">Robot usage</button>
+      <button type="button" class="btn" data-view="models">Models</button>
+      <button type="button" class="btn" data-view="instances">Devices</button>
+      <button type="button" class="btn" data-view="people">People</button>
+      <button type="button" class="btn" data-view="imports">Imported assignments <span id="importCount"></span></button>
+    </nav>
+    <div id="adminView"><p>Loading the inventory…</p></div>
+    <p class="toast" id="toast" role="status" aria-live="polite"></p>
+  </section>
+</div></main>
+<footer><div class="wrap"><span>© 2026 Dr. Kannan Peesapati. All rights reserved.</span><span>Digital Factory Lab · FH Technikum Wien</span></div></footer>
+<div id="dlgHost"></div>
+<script src="/js/lab.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>
