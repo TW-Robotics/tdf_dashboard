@@ -422,6 +422,8 @@
   ],
   "instanceCounts": {
     "tb3": 6,
-    "robotino3": 2
+    "robotino3": 2,
+    "ur5": 2,
+    "w818": 3
   }
 }
