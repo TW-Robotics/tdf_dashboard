@@ -63,16 +63,23 @@ function renderStatus(){
    <div class="summary">
      ${["free","use","occ"].map(k=>`<button class="sum ${k}" data-f="${k}" aria-pressed="${filter===k}"><span>${k==="free"?"Free":k==="use"?"Busy (in use by a person)":"Occupied / out of service"}</span><b>${n[k]}</b></button>`).join("")}
    </div>
-   <div class="legend"><span class="pill free"><i></i>Free –ß ready to book</span><span class="pill use"><i></i>Busy – using by a named person</span><span class="pill occ"><i></i>Occupied – maintenance, course or blocked</span>${filter!=="all"?`<button class="btn" id="clr">Show all</button>`:""}</div>
+   <div class="legend"><span class="pill free"><i></i>Free – ready to book</span><span class="pill use"><i></i>Busy – in use by a named person</span><span class="pill occ"><i></i>Occupied – maintenance, course or blocked</span>${filter!=="all"?`<button class="btn" id="clr">Show all</button>`:""}</div>
    ${liveOk?"":`<p class="note-bar" id="offNote">Server not reachable: changes are saved in this browser only.</p>`}
    <div class="board">${list.map(r=>{const s=st(r.id),d=STATES[s.state];
      const until = s.date ? ` until ${fmtDate(s.date)}` : "";
-     const who=s.state==="use"?`@ <strong>${esc(s.person||"Unknown")}</strong>${until}`:s.state==="occ"?esc(s.note||"Occupied"):"Available";
+     // Busy and Occupied both show the responsible person (older Occupied entries without a name show the reason)
+     // "@ NAME" in the colour of the status: Busy #a46a00, Occupied #c0322b
+     const nameCol={use:"#a46a00",occ:"#c0322b"}[s.state];
+     const at=n=>`<span class="who-name" style="color:${nameCol}">@ <strong>${esc(n)}</strong></span>${until}`;
+     const who=s.state==="free"?"Available"
+       :s.person?at(s.person)
+       :s.state==="use"?at("Unknown")
+       :esc(s.note||"Occupied");
      return `<button class="st ${d.cls}${canEdit?"":" ro"}" data-id="${r.id}" ${canEdit?"":`aria-disabled="true" tabindex="-1"`}>
        <div class="row"><span class="cellid">${r.cell}</span>${pill(r.id)}</div>
        <h3>${esc(r.name)}</h3>
        <div class="who">${who}</div>
-       ${s.state!=="free"&&s.note&&s.state==="use"?`<div class="meta">${esc(s.note)}</div>`:""}
+       ${s.state!=="free"&&s.note&&(s.state==="use"||s.person)?`<div class="meta">${esc(s.note)}</div>`:""}
        <div class="meta">${s.since?"Since "+ago(s.since):r.maker}</div>
      </button>`}).join("")}</div>`;
   document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{filter=filter===b.dataset.f?"all":b.dataset.f;renderStatus()});
@@ -92,31 +99,31 @@ function openDlg(id){
   host.innerHTML=`<div class="scrim" id="scrim"><form class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT">
     <h2 id="dlgT">${esc(r.name)}</h2><p class="sub">${esc(r.maker)} · ${r.cell}</p>
     <div class="choices">${Object.entries(STATES).map(([k,v])=>`<button type="button" class="choice ${v.cls}" data-k="${k}" aria-pressed="${pick===k}">${v.label}</button>`).join("")}</div>
-    <label class="field" id="pf">Person using the robot<input id="person" maxlength="60" placeholder="e.g. Person ABC" value="${esc(cur.state==="use"?cur.person:"")}"></label>
+    <label class="field" id="pf">Responsible person<input id="person" maxlength="60" placeholder="e.g. Person ABC" value="${esc(cur.state!=="free"?cur.person||"":"")}"></label>
     <label class="field" id="nf"><span id="nl">Note</span><input id="note" maxlength="80" placeholder="" value="${esc(cur.state!=="free"?cur.note||"":"")}"></label>
     <label class="field" id="tf" hidden>Lab token<input id="token" type="password" autocomplete="off"></label>
     <p class="err" id="err" hidden></p>
     <div class="actions"><button type="button" class="btn" id="cancel">Cancel</button><button class="btn primary" id="save">Save</button></div>
   </form></div>`;
   const sync=()=>{document.querySelectorAll(".choice").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===pick)));
-    $("#pf").hidden=pick!=="use";$("#nf").hidden=pick==="free";
+    $("#pf").hidden=pick==="free";$("#nf").hidden=pick==="free";
     $("#nl").textContent=pick==="occ"?"Reason":"Project or note (optional)";
     $("#note").placeholder=pick==="occ"?"e.g. Maintenance, Lecture RO3 until 16:00":"e.g. Pick-and-place thesis";};
   sync();
-  document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{pick=b.dataset.k;sync();if(pick==="use")$("#person").focus()});
+  document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{pick=b.dataset.k;sync();if(pick!=="free")$("#person").focus()});
   const close=()=>{host.innerHTML=""};
   $("#cancel").onclick=close;
   $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
   document.addEventListener("keydown",function k(e){if(e.key==="Escape"){close();document.removeEventListener("keydown",k)}});
   $("#dlg").onsubmit=async e=>{e.preventDefault();
     const person=$("#person").value.trim(),note=$("#note").value.trim(),err=$("#err");
-    if(pick==="use"&&!person){err.textContent="Enter the name of the person using the robot.";err.hidden=false;return}
-    const body={state:pick,person:pick==="use"?person:"",note:pick==="free"?"":note,since:pick==="free"?0:Date.now()};
+    if(pick!=="free"&&!person){err.textContent="Enter the name of the responsible person.";err.hidden=false;return}
+    const body={state:pick,person:pick!=="free"?person:"",date:pick!=="free"?cur.date||"":"",note:pick==="free"?"":note,since:pick==="free"?0:Date.now()};
     const same=cur.state===body.state&&(cur.person||"")===body.person&&(cur.note||"")===body.note;
     if(same){close();return}
     const tk=$("#token").value.trim();if(tk){try{localStorage.setItem("lab-token",tk)}catch(_){}}
     $("#save").disabled=true;$("#save").textContent="Saving…";
-    try{await window.LAB_SAVE(id,body);close()}
+    try{await window.LAB_SAVE(id,body);close();route()} // redraw: the poll during save skipped it while the dialog was open
     catch(x){$("#save").disabled=false;$("#save").textContent="Save";
       if(x&&x.code==="permission_denied")$("#tf").hidden=false;
       err.textContent=x&&x.code==="permission_denied"?"This lab requires a token to change the status. Enter it and save again.":"The status could not be saved. Check your connection and try again.";err.hidden=false}

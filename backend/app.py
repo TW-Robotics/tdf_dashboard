@@ -13,6 +13,7 @@ Public
 Admin (header "X-Lab-Token: <LAB_ADMIN_TOKEN>")
     POST /api/admin/login       -> 200 if the token is valid, else 403
     PUT  /api/status/<robot>    -> body {"state": "free|use|occ", "person": "", "date": "", "note": ""}
+                                   (person is required for use and occ)
     POST /api/admin/reset       -> sets every robot to free
 
 Environment
@@ -128,24 +129,26 @@ def put_status(robot_id: str):
     state = body.get("state")
     if state not in VALID_STATES:
         abort(400, "state must be free, use or occ")
-    person = _clean(body.get("person"), 60)
-    if state == "use" and not person:
-        abort(400, "person is required when the robot is busy")
+    # Busy and Occupied both need a responsible person; Free clears everything
+    has_person = state in ("use", "occ")
+    person = _clean(body.get("person"), 60) if has_person else ""
+    if has_person and not person:
+        abort(400, "person is required when the robot is busy or occupied")
 
     # Clean and capture the date field (YYYY-MM-DD from date input)
-    date_val = _clean(body.get("date"), 10) if state == "use" else ""
+    date_val = _clean(body.get("date"), 10) if has_person else ""
 
     with _lock:
         data = _load()
         prev = data.get(robot_id, {})
         unchanged = (
-            prev.get("state") == state and 
-            prev.get("person", "") == (person if state == "use" else "") and
+            prev.get("state") == state and
+            prev.get("person", "") == person and
             prev.get("date", "") == date_val
         )
         entry = {
             "state": state,
-            "person": person if state == "use" else "",
+            "person": person,
             "date": date_val,
             "note": _clean(body.get("note"), 80) if state != "free" else "",
             # keep the original start time when only the note/date changes

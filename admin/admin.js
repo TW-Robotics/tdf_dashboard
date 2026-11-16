@@ -123,7 +123,7 @@
   }
   function personSelect(r, c) {
     // Always selectable: picking a person switches the robot to Busy (see change handler)
-    const val = c.state === "use" ? (c.person || "").trim() : "";
+    const val = c.state !== "free" ? (c.person || "").trim() : "";
     // keep a saved name that is no longer in the list, so it is not lost
     const names = val && !PEOPLE.includes(val) ? [val, ...PEOPLE] : PEOPLE;
     const opts = [`<option value="">Select person…</option>`]
@@ -139,7 +139,7 @@
         ${["free", "use", "occ"].map((k) => `<button type="button" class="${k}" data-k="${k}" aria-pressed="${c.state === k}">${LABELS[k]}</button>`).join("")}
       </div></td>
       <td>${personSelect(r, c)}</td>
-      <td><input type="date" id="d-${r.id}" data-f="date" value="${esc(c.state === "use" ? c.date : "")}" ${c.state === "use" ? "" : "disabled"} aria-label="Date for ${esc(r.name)}"></td>
+      <td><input type="date" id="d-${r.id}" data-f="date" value="${esc(c.state !== "free" ? c.date : "")}" ${c.state !== "free" ? "" : "disabled"} aria-label="Date for ${esc(r.name)}"></td>
       <td><input id="n-${r.id}" data-f="note" maxlength="80" placeholder="${c.state === "occ" ? "e.g. Maintenance" : "Optional"}" value="${esc(c.state === "free" ? "" : c.note)}" ${c.state === "free" ? "disabled" : ""} aria-label="Note for ${esc(r.name)}"></td>
       <td class="since">${s.state ? ago(s.since) : "—"}</td>
       <td class="row-save"><button type="button" class="btn primary" data-save ${isDirty(r.id) ? "" : "disabled"}>Save</button></td>
@@ -193,12 +193,13 @@
       const d = { 
         ...currentState, 
         state: seg.dataset.k,
-        date: seg.dataset.k === "use" ? currentState.date : "" 
+        date: seg.dataset.k !== "free" ? currentState.date : "" 
       };
+      // Busy and Occupied keep person, date and note; Free clears everything
       if (d.state === "free") { d.person = ""; d.date = ""; d.note = ""; }
       drafts[id] = d;
       rerenderRow(id);
-      if (d.state === "use") document.getElementById("p-" + id).focus();
+      if (d.state !== "free") document.getElementById("p-" + id).focus();
       return;
     }
     if (e.target.closest("[data-save]")) save(id);
@@ -210,8 +211,8 @@
     if (!tr || !e.target.dataset.f) return;
     const id = tr.dataset.id;
     drafts[id] = { ...current(id), [e.target.dataset.f]: e.target.value };
-    // choosing a person on a Free / Occupied robot makes it Busy
-    if (e.target.dataset.f === "person" && e.target.value && drafts[id].state !== "use") {
+    // choosing a person on a Free robot makes it Busy (Occupied stays Occupied)
+    if (e.isTrusted && e.target.dataset.f === "person" && e.target.value && drafts[id].state === "free") {
       drafts[id].state = "use";
       rerenderRow(id);
       return;
@@ -231,11 +232,11 @@
   async function save(id) {
     const d = current(id);
     const name = ROBOTS.find((r) => r.id === id).name;
-    if (d.state === "use" && !d.person.trim()) {
+    if (d.state !== "free" && !d.person.trim()) {
       const p = document.getElementById("p-" + id);
       p.classList.add("bad");
       p.focus();
-      return toast(`Select who is using ${name}.`, true);
+      return toast(`Select the responsible person for ${name}.`, true);
     }
     const btn = document.querySelector(`tr[data-id="${id}"] [data-save]`);
     btn.disabled = true;
@@ -245,8 +246,8 @@
         method: "PUT",
         body: JSON.stringify({ 
           state: d.state, 
-          person: d.person.trim(), 
-          date: d.date, 
+          person: d.state !== "free" ? d.person.trim() : "",
+          date: d.state !== "free" ? d.date : "", 
           note: d.note.trim() 
         }),
       });
@@ -254,7 +255,7 @@
       if (!r.ok) throw new Error(await r.text());
       delete drafts[id];
       await refresh();
-      toast(d.state === "use" ? `${name} is now busy (used by ${d.person.trim()}).` : `${name} is now ${LABELS[d.state].toLowerCase()}.`);
+      toast(`${name} is now ${LABELS[d.state].toLowerCase()}` + (d.state !== "free" && d.person.trim() ? ` (${d.person.trim()}).` : "."));
     } catch (_) {
       btn.disabled = false;
       btn.textContent = "Save";
