@@ -15,9 +15,12 @@ function route(){
   const h=(location.hash||"#fleet").slice(1);
   let v="fleet",doc=null;
   if(h==="status")v="status";
+  else if(h==="booking"||h==="mybookings"||(h.startsWith("book-")&&byId[h.slice(5)]))v="booking";
   else if(h.startsWith("doc-")&&byId[h.slice(4)]){v="doc";doc=h.slice(4)}
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",String(t.dataset.view===(v==="doc"?"fleet":v))));
-  if(v==="fleet")renderFleet();else if(v==="status")renderStatus();else renderDoc(doc);
+  if(v==="fleet")renderFleet();else if(v==="status")renderStatus();
+  else if(v==="booking"){if(window.LAB_BOOKING)window.LAB_BOOKING.render(h);else $("#view").innerHTML='<p class="note-bar">Loading bookings…</p>'}
+  else renderDoc(doc);
   counts();
 }
 function go(h){if(location.hash==="#"+h)route();else location.hash=h}
@@ -26,6 +29,7 @@ window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0)});
 function counts(){
   $("#cFleet").textContent=ROBOTS.length;
   $("#cFree").textContent=ROBOTS.filter(r=>st(r.id).state==="free").length+" free";
+  const nb=window.LAB_BOOKING?window.LAB_BOOKING.count():0;$("#cBook").textContent=nb?nb+" mine":"";
 }
 
 /* ---------- fleet ---------- */
@@ -71,7 +75,9 @@ function renderStatus(){
      // "@ NAME" in the colour of the status: Busy #a46a00, Occupied #c0322b
      const nameCol={use:"#a46a00",occ:"#c0322b"}[s.state];
      const at=n=>`<span class="who-name" style="color:${nameCol}">@ <strong>${esc(n)}</strong></span>${until}`;
-     const who=s.state==="free"?"Available"
+     const slot=s.state==="free"&&window.LAB_BOOKING?window.LAB_BOOKING.activeNow(r.id):null;
+     const who=slot?`<span class="who-name" style="color:#a46a00">Slot booked · <strong>${esc(slot.person)}</strong></span> until ${String(slot.end).padStart(2,"0")}:00`
+       :s.state==="free"?"Available"
        :s.person?at(s.person)
        :s.state==="use"?at("Unknown")
        :esc(s.note||"Occupied");
@@ -188,7 +194,7 @@ async function renderMdDoc(r){
   // title + status row
   const h1=tmp.querySelector("h1");
   const status=document.createElement("div");status.className="doc-status";
-  status.innerHTML=`${pill(id)}<span>${r.cell}</span><span>IP ${esc(r.ip)}</span><a href="#status" style="color:var(--brand)">Book this robot →</a>`;
+  status.innerHTML=`${pill(id)}<span>${r.cell}</span><span>IP ${esc(r.ip)}</span><a href="#book-${id}" style="color:var(--brand)">Book a slot →</a>`;
   if(h1){h1.after(status)}else{tmp.prepend(status);tmp.insertAdjacentHTML("afterbegin",`<h1>${esc(r.name)} setup</h1>`)}
   body.innerHTML="";body.append(...tmp.childNodes);
   body.insertAdjacentHTML("beforeend",`<div class="pager">${prev?`<button type="button" data-go="doc-${prev.id}">← ${esc(prev.name)}</button>`:"<span></span>"}${next?`<button type="button" data-go="doc-${next.id}">${esc(next.name)} →</button>`:"<span></span>"}</div>`);
@@ -216,7 +222,9 @@ function apply(obj){
   for(const k in status)delete status[k];
   for(const [id,v] of Object.entries(obj||{}))if(byId[id])status[id]=v;
   const onDoc=(location.hash||"").startsWith("#doc-"), typing=document.activeElement&&document.activeElement.id==="q";
-  if($("#dlgHost").innerHTML||typing)counts();
+  const onBooking=/^#(booking|mybookings|book-)/.test(location.hash||"");
+  if(onBooking){if(window.LAB_BOOKING)window.LAB_BOOKING.onStatus();counts()}
+  else if($("#dlgHost").innerHTML||typing)counts();
   else if(onDoc){const ds=document.querySelector(".doc-status .pill");if(ds)ds.outerHTML=pill(location.hash.slice(5));counts()}
   else route();
 }
@@ -244,6 +252,10 @@ window.LAB_SAVE=async(id,body)=>{
   }else{status[id]=body;saveLocal();route()}
 };
 fetch("api/config",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(c=>{if(c){canEdit=!!c.publicEdit;if(location.hash==="#status")route()}}).catch(()=>{});
+/* helpers shared with booking.js */
+window.LAB_APP={status:st,esc,go,fmtDate,
+  token:()=>{try{return localStorage.getItem("lab-token")||""}catch(_){return""}},
+  refreshBoard:()=>{counts();if((location.hash||"#fleet")==="#status"&&!$("#dlgHost").innerHTML)renderStatus()}};
 route();
 poll();
 setInterval(poll,5000);

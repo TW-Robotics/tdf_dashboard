@@ -153,6 +153,34 @@ The tiles and the availability board are built from `frontend/js/robots.js`:
 4. Associate the image path with the same `art` in the function `window.LAB_ART` at `frontend/js/robots.js`
 
 
+## Book a slot (hourly bookings)
+
+The third tab lets anyone book a robot by the hour (based on the *Stationsbuchung* wireframe):
+
+1. **Robots** (`#booking`) – pick date, time window, location; tiles or list show which robots are *Free*, *Booked* in that window or *Not bookable*.
+2. **Choose a time** (`#book-<robot>`) – week view, hourly slots; click a start slot, then the next slots to make it longer (max. `LAB_MAX_HOURS`).
+3. **My bookings** (`#mybookings`) – confirmation with booking number and calendar file (.ics), upcoming / past list, *Change* and *Cancel*.
+
+- People pick their name from `frontend/js/people.js` (also used by the admin panel); the browser remembers it. There is no login, so this works on trust – only the same name or the admin token can change or cancel a booking.
+- A robot marked **Busy** or **Occupied** on the Availability board can't be booked until its date (or at all, if it has no date).
+- A booking running right now shows on the Availability board as "Slot booked · name until HH:00".
+- Bookings are stored in `bookings.json` next to `status.json` (in Docker: the `lab-data` volume). Settings: `LAB_HOURS` (default `8-18`), `LAB_MAX_HOURS` (`4`), `LAB_OPEN_DAYS` (`1-5` = Mon–Fri), `LAB_WEEKS_AHEAD` (`4`), `LAB_TZ` (`Europe/Vienna`).
+
+## Moodle Book (setup guides)
+
+The Markdown guides in `frontend/docs/` stay the source. Moodle's Book import only accepts HTML, so convert them first:
+
+```bash
+pip install -r tools/requirements.txt
+python tools/build_moodle_book.py        # -> dist/tdf_book_import.zip
+```
+
+In Moodle: open the Book → **More → Import chapter** → type *Each HTML file represents one chapter* → upload `dist/tdf_book_import.zip`.
+
+- Chapter order, names, IPs and images come from `frontend/js/robots.js`; the first chapter is an *Overview* with a clickable tile per robot.
+- Notes, warnings, `!!!` tips, *Expected …* lines, code blocks and tables are styled; `#doc-<id>` links become links between chapters.
+- Importing again into the same Book **adds** a second set of chapters. To update, import into a new Book (and delete the old one), or edit the single changed chapter in Moodle.
+
 ## Direct links
 
 - `#fleet` – robot tiles
