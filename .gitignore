@@ -3,3 +3,5 @@ __pycache__/
 .venv/
 backend/data/status.json
 backend/data/*.tmp
+dist/
+backend/data/bookings.json

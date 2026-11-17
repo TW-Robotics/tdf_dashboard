@@ -12,6 +12,12 @@ services:
       LAB_PUBLIC_EDIT: "0"
       # Development mode (no token) is off under Docker; "1" skips the token
       LAB_DEV_MODE: "0"
+      # "Book a slot": bookable hours, max hours per booking, weekdays (1 = Mon), weeks ahead
+      LAB_HOURS: "8-18"
+      LAB_MAX_HOURS: "4"
+      LAB_OPEN_DAYS: "1-5"
+      LAB_WEEKS_AHEAD: "4"
+      LAB_TZ: "Europe/Vienna"
     restart: unless-stopped
 volumes:
   lab-data:

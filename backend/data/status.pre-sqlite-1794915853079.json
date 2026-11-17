@@ -1,0 +1,85 @@
+{
+  "kr6": {
+    "state": "use",
+    "person": "Simon Schwaiger, MSc",
+    "date": "",
+    "note": "Pick-and-place exercise",
+    "since": 1794596905889
+  },
+  "fr3": {
+    "state": "use",
+    "person": "Felix Dauser",
+    "note": "Force control tests",
+    "since": 1793717201274
+  },
+  "tb3": {
+    "state": "use",
+    "person": "Dr. techn. Surya Kannan Peesapati",
+    "date": "2027-02-26",
+    "note": "TCP/IP motion test",
+    "since": 1794824810876
+  },
+  "so101": {
+    "state": "use",
+    "person": "Felix Dauser, BSc",
+    "date": "2026-12-31",
+    "note": "",
+    "since": 1794596824236
+  },
+  "lidarbot": {
+    "state": "use",
+    "person": "Simon Schwaiger, MSc",
+    "date": "2026-11-12",
+    "note": "",
+    "since": 1794596821339
+  },
+  "ddchassis": {
+    "state": "use",
+    "person": "Dipl.-Ing. Bernhard Neuberger, BSc.",
+    "date": "2026-12-15",
+    "note": "",
+    "since": 1794596817944
+  },
+  "mir": {
+    "state": "use",
+    "person": "Dr. techn. Surya Kannan Peesapati",
+    "date": "2027-01-27",
+    "note": "",
+    "since": 1794596902978
+  },
+  "ur5": {
+    "state": "use",
+    "person": "Amr Eltabakh",
+    "date": "",
+    "note": "",
+    "since": 1794596357479
+  },
+  "g1": {
+    "state": "use",
+    "person": "FH-Prof. Dr.techn. Mohamed Aburaia, MSc",
+    "date": "",
+    "note": "",
+    "since": 1794597008296
+  },
+  "wavego": {
+    "state": "use",
+    "person": "FH-Prof. Dr.techn. Mohamed Aburaia, MSc",
+    "date": "",
+    "note": "",
+    "since": 1794597010850
+  },
+  "gofa": {
+    "state": "occ",
+    "person": "DI Dr. Kemajl Stuja",
+    "date": "",
+    "note": "",
+    "since": 1794825561963
+  },
+  "er4ia": {
+    "state": "occ",
+    "person": "",
+    "date": "",
+    "note": "",
+    "since": 1794824979224
+  }
+}

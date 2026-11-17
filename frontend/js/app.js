@@ -8,16 +8,23 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const st=id=>status[id]||{state:"free"};
 function ago(t){if(!t)return"";const m=Math.round((Date.now()-t)/60000);if(m<1)return"just now";if(m<60)return m+" min ago";const h=Math.round(m/60);if(h<24)return h+" h ago";return Math.round(h/24)+" d ago"}
-function pill(id){const s=st(id),d=STATES[s.state]||STATES.free;return `<span class="pill ${d.cls}"><i></i>${d.label}</span>`}
+const slotNow=id=>st(id).state==="free"&&window.LAB_BOOKING?window.LAB_BOOKING.activeNow(id):null;
+const eff=id=>slotNow(id)?"use":st(id).state;   // a running slot booking counts as Busy
+function pill(id){if(slotNow(id))return `<span class="pill use"><i></i>Booked now</span>`;const s=st(id),d=STATES[s.state]||STATES.free;return `<span class="pill ${d.cls}"><i></i>${d.label}</span>`}
+function nextLine(id,skipNow){const B=window.LAB_BOOKING;if(!B)return"";const now=slotNow(id),b=B.next(id,skipNow&&now);
+  if(!b)return"";return `<div class="next-slot">${now&&b.id===now.id?"Now":"Next slot"}: ${esc(B.describe(b))}</div>`}
 
 /* ---------- routing ---------- */
 function route(){
   const h=(location.hash||"#fleet").slice(1);
   let v="fleet",doc=null;
   if(h==="status")v="status";
+  else if(h==="booking"||h==="mybookings"||(h.startsWith("book-")&&byId[h.slice(5)]))v="booking";
   else if(h.startsWith("doc-")&&byId[h.slice(4)]){v="doc";doc=h.slice(4)}
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",String(t.dataset.view===(v==="doc"?"fleet":v))));
-  if(v==="fleet")renderFleet();else if(v==="status")renderStatus();else renderDoc(doc);
+  if(v==="fleet")renderFleet();else if(v==="status")renderStatus();
+  else if(v==="booking"){if(window.LAB_BOOKING)window.LAB_BOOKING.render(h);else $("#view").innerHTML='<p class="note-bar">Loading bookings…</p>'}
+  else renderDoc(doc);
   counts();
 }
 function go(h){if(location.hash==="#"+h)route();else location.hash=h}
@@ -25,7 +32,8 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>go(t.dataset.view));
 window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0)});
 function counts(){
   $("#cFleet").textContent=ROBOTS.length;
-  $("#cFree").textContent=ROBOTS.filter(r=>st(r.id).state==="free").length+" free";
+  $("#cFree").textContent=ROBOTS.filter(r=>eff(r.id)==="free").length+" free";
+  const nb=window.LAB_BOOKING?window.LAB_BOOKING.count():0;$("#cBook").textContent=nb?nb+" mine":"";
 }
 
 /* ---------- fleet ---------- */
@@ -44,6 +52,7 @@ function renderFleet(){
          <span class="maker">${esc(r.maker)}</span>
          <h3>${esc(r.name)}</h3>
          <div class="specs"><span class="chip">${r.axes?r.axes+"-axis":r.art==="tb"?"ROS":"AMR"}</span><span class="chip">${r.payload}</span><span class="chip">${r.reach}</span></div>
+         ${nextLine(r.id)}
          <div class="tile-foot">${pill(r.id)}<span class="doclink">Setup docs →</span></div>
        </div>
      </button>`).join("")||`<p>No robot matches “${esc(query)}”.</p>`}
@@ -54,24 +63,26 @@ function renderFleet(){
 
 /* ---------- status board ---------- */
 function renderStatus(){
-  const n={free:0,use:0,occ:0};ROBOTS.forEach(r=>n[st(r.id).state]++);
-  const list=ROBOTS.filter(r=>filter==="all"||st(r.id).state===filter);
+  const n={free:0,use:0,occ:0};ROBOTS.forEach(r=>n[eff(r.id)]++);
+  const list=ROBOTS.filter(r=>filter==="all"||eff(r.id)===filter);
   $("#view").innerHTML=`
    <div class="page-head">
-     <div><h1>Availability</h1><p>${canEdit?"Tap a robot to book it, release it, or mark it out of service. Changes are visible to everyone with this page open.":"Live status of every robot. Bookings are managed by the lab admin – ask them to reserve a robot for you."}</p></div>
+     <div><h1>Availability</h1><p>${canEdit?"Tap a robot to book it, release it, or mark it out of service. Changes are visible to everyone with this page open.":`Live status of every robot. To use a robot for a few hours, book it under <a href="#booking" style="color:var(--brand)">Book a slot</a>. Long-term assignments are managed by the lab admin.`}</p></div>
    </div>
    <div class="summary">
      ${["free","use","occ"].map(k=>`<button class="sum ${k}" data-f="${k}" aria-pressed="${filter===k}"><span>${k==="free"?"Free":k==="use"?"Busy (in use by a person)":"Occupied / out of service"}</span><b>${n[k]}</b></button>`).join("")}
    </div>
    <div class="legend"><span class="pill free"><i></i>Free – ready to book</span><span class="pill use"><i></i>Busy – in use by a named person</span><span class="pill occ"><i></i>Occupied – maintenance, course or blocked</span>${filter!=="all"?`<button class="btn" id="clr">Show all</button>`:""}</div>
    ${liveOk?"":`<p class="note-bar" id="offNote">Server not reachable: changes are saved in this browser only.</p>`}
-   <div class="board">${list.map(r=>{const s=st(r.id),d=STATES[s.state];
+   <div class="board">${list.map(r=>{const s=st(r.id),d=STATES[eff(r.id)];
      const until = s.date ? ` until ${fmtDate(s.date)}` : "";
      // Busy and Occupied both show the responsible person (older Occupied entries without a name show the reason)
      // "@ NAME" in the colour of the status: Busy #a46a00, Occupied #c0322b
      const nameCol={use:"#a46a00",occ:"#c0322b"}[s.state];
      const at=n=>`<span class="who-name" style="color:${nameCol}">@ <strong>${esc(n)}</strong></span>${until}`;
-     const who=s.state==="free"?"Available"
+     const slot=slotNow(r.id);
+     const who=slot?`<span class="who-name" style="color:#a46a00">Slot booked · <strong>${esc(slot.person)}</strong></span> until ${String(slot.end).padStart(2,"0")}:00`
+       :s.state==="free"?"Available"
        :s.person?at(s.person)
        :s.state==="use"?at("Unknown")
        :esc(s.note||"Occupied");
@@ -80,6 +91,7 @@ function renderStatus(){
        <h3>${esc(r.name)}</h3>
        <div class="who">${who}</div>
        ${s.state!=="free"&&s.note&&(s.state==="use"||s.person)?`<div class="meta">${esc(s.note)}</div>`:""}
+       ${nextLine(r.id,true)}
        <div class="meta">${s.since?"Since "+ago(s.since):r.maker}</div>
      </button>`}).join("")}</div>`;
   document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{filter=filter===b.dataset.f?"all":b.dataset.f;renderStatus()});
@@ -188,7 +200,7 @@ async function renderMdDoc(r){
   // title + status row
   const h1=tmp.querySelector("h1");
   const status=document.createElement("div");status.className="doc-status";
-  status.innerHTML=`${pill(id)}<span>${r.cell}</span><span>IP ${esc(r.ip)}</span><a href="#status" style="color:var(--brand)">Book this robot →</a>`;
+  status.innerHTML=`${pill(id)}<span>${r.cell}</span><span>IP ${esc(r.ip)}</span><a href="#book-${id}" style="color:var(--brand)">Book a slot →</a>`;
   if(h1){h1.after(status)}else{tmp.prepend(status);tmp.insertAdjacentHTML("afterbegin",`<h1>${esc(r.name)} setup</h1>`)}
   body.innerHTML="";body.append(...tmp.childNodes);
   body.insertAdjacentHTML("beforeend",`<div class="pager">${prev?`<button type="button" data-go="doc-${prev.id}">← ${esc(prev.name)}</button>`:"<span></span>"}${next?`<button type="button" data-go="doc-${next.id}">${esc(next.name)} →</button>`:"<span></span>"}</div>`);
@@ -216,7 +228,9 @@ function apply(obj){
   for(const k in status)delete status[k];
   for(const [id,v] of Object.entries(obj||{}))if(byId[id])status[id]=v;
   const onDoc=(location.hash||"").startsWith("#doc-"), typing=document.activeElement&&document.activeElement.id==="q";
-  if($("#dlgHost").innerHTML||typing)counts();
+  const onBooking=/^#(booking|mybookings|book-)/.test(location.hash||"");
+  if(onBooking){if(window.LAB_BOOKING)window.LAB_BOOKING.onStatus();counts()}
+  else if($("#dlgHost").innerHTML||typing)counts();
   else if(onDoc){const ds=document.querySelector(".doc-status .pill");if(ds)ds.outerHTML=pill(location.hash.slice(5));counts()}
   else route();
 }
@@ -244,6 +258,13 @@ window.LAB_SAVE=async(id,body)=>{
   }else{status[id]=body;saveLocal();route()}
 };
 fetch("api/config",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(c=>{if(c){canEdit=!!c.publicEdit;if(location.hash==="#status")route()}}).catch(()=>{});
+/* helpers shared with booking.js */
+window.LAB_APP={status:st,esc,go,fmtDate,
+  token:()=>{try{return localStorage.getItem("lab-token")||""}catch(_){return""}},
+  refreshBoard:()=>{counts();const h=location.hash||"#fleet";if($("#dlgHost").innerHTML)return;
+    if(h==="#status")renderStatus();
+    else if(h==="#fleet"&&!(document.activeElement&&document.activeElement.id==="q"))renderFleet();
+    else if(h.startsWith("#doc-")){const ds=document.querySelector(".doc-status .pill");if(ds)ds.outerHTML=pill(h.slice(5))}}};
 route();
 poll();
 setInterval(poll,5000);
