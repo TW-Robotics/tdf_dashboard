@@ -6,7 +6,6 @@ COPY backend backend
 COPY frontend frontend
 COPY admin admin
 ENV LAB_DATA_FILE=/data/status.json
-ENV LAB_DB_FILE=/data/lab.sqlite3
 VOLUME ["/data"]
 EXPOSE 8080
 CMD ["gunicorn", "-w", "1", "--threads", "4", "-b", "0.0.0.0:8080", "--chdir", "backend", "app:app"]

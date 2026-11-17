@@ -1,112 +1,135 @@
 (function(){
-const L=window.Lab, {esc}=L, ART=window.LAB_ART;
-let ROBOTS=[], byId={}, fleet={models:[],instances:[]}, config={}, liveOk=false, loaded=false;
-let filter="all", query="", polling=null;
-const selected={};
-const $=selector=>document.querySelector(selector);
-const devicesFor=id=>fleet.instances.filter(device=>device.modelId===id);
-function selectedDevice(model, devices=devicesFor(model.id)){
-  const device=devices.find(item=>item.id===selected[model.id])||devices[0];
-  if(device)selected[model.id]=device.id;
-  return device;
-}
-function aggregate(model){
-  const devices=devicesFor(model.id), free=devices.filter(device=>L.state(device)==="free").length;
-  return `<span class="pill neutral">${free} / ${devices.length} free</span>`;
-}
-function counts(){
-  $("#cFleet").textContent=loaded?ROBOTS.length:"";
-  $("#cFree").textContent=loaded?fleet.instances.filter(device=>L.state(device)==="free").length+" free":"";
-}
-function connection(){
-  $("#liveBadge").classList.toggle("off",!liveOk);
-  $("#liveText").textContent=liveOk?"Live status":loaded?"Status may be outdated":"Connecting…";
-  const note=$("#connectionNote");
-  note.hidden=liveOk;
-  note.textContent=loaded?"Server not reachable. Showing the last known status; bookings are unavailable until the connection returns.":"Loading the shared inventory. A server connection is required to view current availability.";
-}
+const ROBOTS=window.LAB_ROBOTS, ART=window.LAB_ART;
+const STATES={free:{label:"Free",cls:"free"},use:{label:"Busy",cls:"use"},occ:{label:"Occupied",cls:"occ"}};
+const status={}; // id -> {state, person, note, since}
+let col=null, liveOk=false, filter="all", query="", canEdit=true;
+const byId=Object.fromEntries(ROBOTS.map(r=>[r.id,r]));
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const st=id=>status[id]||{state:"free"};
+function ago(t){if(!t)return"";const m=Math.round((Date.now()-t)/60000);if(m<1)return"just now";if(m<60)return m+" min ago";const h=Math.round(m/60);if(h<24)return h+" h ago";return Math.round(h/24)+" d ago"}
+function pill(id){const s=st(id),d=STATES[s.state]||STATES.free;return `<span class="pill ${d.cls}"><i></i>${d.label}</span>`}
+
+/* ---------- routing ---------- */
 function route(){
+  const h=(location.hash||"#fleet").slice(1);
+  let v="fleet",doc=null;
+  if(h==="status")v="status";
+  else if(h.startsWith("doc-")&&byId[h.slice(4)]){v="doc";doc=h.slice(4)}
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",String(t.dataset.view===(v==="doc"?"fleet":v))));
+  if(v==="fleet")renderFleet();else if(v==="status")renderStatus();else renderDoc(doc);
   counts();
-  if(!loaded){$("#view").innerHTML='<p class="note-bar">Waiting for the lab server…</p>';return}
-  const hash=(location.hash||"#fleet").slice(1);
-  const view=hash==="status"?"status":hash.startsWith("doc-")&&byId[hash.slice(4)]?"doc":"fleet";
-  document.querySelectorAll(".tab").forEach(tab=>tab.setAttribute("aria-selected",String(tab.dataset.view===(view==="doc"?"fleet":view))));
-  if(view==="status")renderStatus();else if(view==="doc")renderDoc(hash.slice(4));else renderFleet();
 }
-function go(hash){if(location.hash==="#"+hash)route();else location.hash=hash}
-document.querySelectorAll(".tab").forEach(tab=>tab.onclick=()=>go(tab.dataset.view));
+function go(h){if(location.hash==="#"+h)route();else location.hash=h}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>go(t.dataset.view));
 window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0)});
+function counts(){
+  $("#cFleet").textContent=ROBOTS.length;
+  $("#cFree").textContent=ROBOTS.filter(r=>st(r.id).state==="free").length+" free";
+}
+
+/* ---------- fleet ---------- */
 function renderFleet(){
   const q=query.toLowerCase();
-  const models=ROBOTS.filter(model=>!q||[model.name,model.maker,model.type,...devicesFor(model.id).flatMap(device=>[device.inventoryId,device.location])].join(" ").toLowerCase().includes(q));
-  $("#view").innerHTML=`<div class="page-head"><div><h1>Robots in the lab</h1><p>Explore ${ROBOTS.length} models and ${fleet.instances.length} individual devices. Select a model for its setup guide and device details.</p></div>
-    <label class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search model, device ID, maker" value="${esc(query)}" aria-label="Search robots"></label></div>
-    <div class="grid">${models.map(model=>`<button class="tile" data-doc="${esc(model.id)}" aria-label="Open setup docs for ${esc(model.name)}">
-      <div class="tile-art"><img src="${esc(model.image||ART[model.art])}" alt="${esc(model.name)}" loading="lazy"></div>
-      <div class="tile-body"><span class="maker">${esc(model.maker)}</span><h3>${esc(model.name)}</h3>
-      <div class="specs">${[model.axes?model.axes+"-axis":model.type,model.payload,model.reach].filter(value=>value&&!/^(PAYLOAD|REACH)$/.test(value)).map(value=>`<span class="chip">${esc(value)}</span>`).join("")}</div>
-      <div class="tile-foot">${aggregate(model)}<span class="doclink">Setup docs →</span></div></div></button>`).join("")||"<p>No matching robot models.</p>"}</div>`;
-  document.querySelectorAll("[data-doc]").forEach(button=>button.onclick=()=>go("doc-"+button.dataset.doc));
-  const input=$("#q");
-  input.oninput=event=>{query=event.target.value;const position=input.selectionStart;renderFleet();const next=$("#q");next.focus();next.setSelectionRange(position,position)};
+  const list=ROBOTS.filter(r=>!q||(r.name+r.maker+r.type+r.cell).toLowerCase().includes(q));
+  $("#view").innerHTML=`
+   <div class="page-head">
+     <div><h1>Robots in the lab</h1><p>Select a robot to open its setup documentation: power-up, network, software connection and shutdown.</p></div>
+     <label class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search robot, maker, cell" value="${esc(query)}" aria-label="Search robots"></label>
+   </div>
+   <div class="grid">${list.map(r=>`
+     <button class="tile" data-doc="${r.id}" aria-label="Open setup docs for ${esc(r.name)}">
+       <div class="tile-art"><span class="cell">${r.cell}</span><img src="${ART[r.art]}" alt="${r.name}" loading="lazy"></div>
+       <div class="tile-body">
+         <span class="maker">${esc(r.maker)}</span>
+         <h3>${esc(r.name)}</h3>
+         <div class="specs"><span class="chip">${r.axes?r.axes+"-axis":r.art==="tb"?"ROS":"AMR"}</span><span class="chip">${r.payload}</span><span class="chip">${r.reach}</span></div>
+         <div class="tile-foot">${pill(r.id)}<span class="doclink">Setup docs →</span></div>
+       </div>
+     </button>`).join("")||`<p>No robot matches “${esc(query)}”.</p>`}
+   </div>`;
+  document.querySelectorAll("[data-doc]").forEach(b=>b.onclick=()=>go("doc-"+b.dataset.doc));
+  const qi=$("#q");qi.oninput=e=>{query=e.target.value;const pos=qi.selectionStart;renderFleet();const n=$("#q");n.focus();n.setSelectionRange(pos,pos)};
 }
-function devicePicker(model, devices){
-  const device=selectedDevice(model,devices);
-  if(!device)return '<p class="meta">No active devices registered.</p>';
-  return devices.length>1?`<label class="device-picker">Device ID<select data-device="${esc(model.id)}" aria-label="Device for ${esc(model.name)}">${devices.map(item=>L.option(item.id,`${item.inventoryId} — ${L.labels[L.state(item)]}`,device.id)).join("")}</select></label>`:`<p class="inventory-id">${esc(device.inventoryId)}</p>`;
-}
-function deviceDetails(device){
-  if(!device)return "";
-  const status=device.status;
-  if(device.migrationPending)return '<p class="note-bar">The admin needs to match a previous booking to the correct device.</p>';
-  return `<div class="device-state">${L.pill(device)}<span>${esc(device.location)}</span></div>
-    ${status.usedByName?`<p class="who">Used by <strong>${esc(status.usedByName)}</strong></p>`:""}
-    ${status.responsibleName?`<p class="meta">Responsible: ${esc(status.responsibleName)}</p>`:""}
-    ${status.legacyPerson?`<p class="meta">Previous assignment: ${esc(status.legacyPerson)} · awaiting review</p>`:""}
-    ${status.note?`<p class="meta">${esc(status.note)}</p>`:""}
-    ${status.date?`<p class="meta">Until ${esc(L.date(status.date))}</p>`:""}
-    ${status.since?`<p class="meta">In this status since ${esc(L.ago(status.since))}</p>`:""}`;
-}
-function bookingButton(device){
-  if(!device||!config.publicEdit)return "";
-  const available=liveOk&&!device.migrationPending&&device.status.state!=="occ";
-  return `<button class="btn ${device.status.state==="free"?"primary":""}" data-book="${esc(device.id)}" ${available?"":"disabled"}>${device.status.state==="free"?"Book device":device.status.state==="use"?"Release device":"Managed by lab admin"}</button>`;
-}
+
+/* ---------- status board ---------- */
 function renderStatus(){
-  const totals={free:0,use:0,occ:0,unknown:0};
-  fleet.instances.forEach(device=>totals[L.state(device)]++);
-  const models=ROBOTS.filter(model=>devicesFor(model.id).some(device=>filter==="all"||L.state(device)===filter));
-  $("#view").innerHTML=`<div class="page-head"><div><h1>Availability</h1><p>${config.publicEdit?"Choose a device ID to book or release that individual robot.":"Select a device ID to view its availability. The lab admin manages bookings."}</p></div></div>
-    <div class="summary ${totals.unknown?"with-unknown":""}">${["free","use","occ",...(totals.unknown?["unknown"]:[])].map(key=>`<button class="sum ${key}" data-filter="${key}" aria-pressed="${filter===key}"><span>${L.labels[key]}</span><b>${totals[key]}</b></button>`).join("")}</div>
-    <div class="legend"><span>Counts refer to individual devices.</span>${filter!=="all"?'<button class="btn" id="clearFilter">Show all</button>':""}</div>
-    <div class="board">${models.map(model=>{
-      const devices=devicesFor(model.id).filter(device=>filter==="all"||L.state(device)===filter),device=selectedDevice(model,devices);
-      return `<article class="st ${L.state(device)} device-card"><div class="row"><span class="maker">${esc(model.maker)}</span>${aggregate(model)}</div>
-        <h3>${esc(model.name)}</h3>${devicePicker(model,devices)}${deviceDetails(device)}${bookingButton(device)}<a href="#doc-${esc(model.id)}" class="doclink">Setup guide →</a></article>`;
-    }).join("")||"<p>No devices match this filter.</p>"}</div>`;
-  document.querySelectorAll("[data-filter]").forEach(button=>button.onclick=()=>{filter=filter===button.dataset.filter?"all":button.dataset.filter;renderStatus()});
-  if($("#clearFilter"))$("#clearFilter").onclick=()=>{filter="all";renderStatus()};
-  wireDevices();
+  const n={free:0,use:0,occ:0};ROBOTS.forEach(r=>n[st(r.id).state]++);
+  const list=ROBOTS.filter(r=>filter==="all"||st(r.id).state===filter);
+  $("#view").innerHTML=`
+   <div class="page-head">
+     <div><h1>Availability</h1><p>${canEdit?"Tap a robot to book it, release it, or mark it out of service. Changes are visible to everyone with this page open.":"Live status of every robot. Bookings are managed by the lab admin – ask them to reserve a robot for you."}</p></div>
+   </div>
+   <div class="summary">
+     ${["free","use","occ"].map(k=>`<button class="sum ${k}" data-f="${k}" aria-pressed="${filter===k}"><span>${k==="free"?"Free":k==="use"?"Busy (in use by a person)":"Occupied / out of service"}</span><b>${n[k]}</b></button>`).join("")}
+   </div>
+   <div class="legend"><span class="pill free"><i></i>Free – ready to book</span><span class="pill use"><i></i>Busy – in use by a named person</span><span class="pill occ"><i></i>Occupied – maintenance, course or blocked</span>${filter!=="all"?`<button class="btn" id="clr">Show all</button>`:""}</div>
+   ${liveOk?"":`<p class="note-bar" id="offNote">Server not reachable: changes are saved in this browser only.</p>`}
+   <div class="board">${list.map(r=>{const s=st(r.id),d=STATES[s.state];
+     const until = s.date ? ` until ${fmtDate(s.date)}` : "";
+     // Busy and Occupied both show the responsible person (older Occupied entries without a name show the reason)
+     // "@ NAME" in the colour of the status: Busy #a46a00, Occupied #c0322b
+     const nameCol={use:"#a46a00",occ:"#c0322b"}[s.state];
+     const at=n=>`<span class="who-name" style="color:${nameCol}">@ <strong>${esc(n)}</strong></span>${until}`;
+     const who=s.state==="free"?"Available"
+       :s.person?at(s.person)
+       :s.state==="use"?at("Unknown")
+       :esc(s.note||"Occupied");
+     return `<button class="st ${d.cls}${canEdit?"":" ro"}" data-id="${r.id}" ${canEdit?"":`aria-disabled="true" tabindex="-1"`}>
+       <div class="row"><span class="cellid">${r.cell}</span>${pill(r.id)}</div>
+       <h3>${esc(r.name)}</h3>
+       <div class="who">${who}</div>
+       ${s.state!=="free"&&s.note&&(s.state==="use"||s.person)?`<div class="meta">${esc(s.note)}</div>`:""}
+       <div class="meta">${s.since?"Since "+ago(s.since):r.maker}</div>
+     </button>`}).join("")}</div>`;
+  document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{filter=filter===b.dataset.f?"all":b.dataset.f;renderStatus()});
+  const c=$("#clr");if(c)c.onclick=()=>{filter="all";renderStatus()};
+  if(canEdit)document.querySelectorAll(".st").forEach(b=>b.onclick=()=>openDlg(b.dataset.id));
 }
-function devicePanel(model){
-  const devices=devicesFor(model.id),device=selectedDevice(model,devices);
-  return `<div class="doc-device-panel">${aggregate(model)}${devicePicker(model,devices)}${deviceDetails(device)}
-    ${device?`<p class="meta">Connection: ${esc(device.ip||"Not recorded")}</p>${device.connectionNotes?`<p class="meta">${esc(device.connectionNotes)}</p>`:""}`:""}
-    ${bookingButton(device)}<a href="#status" class="doclink">All availability →</a></div>`;
+
+function fmtDate(isoStr) {
+  if (!isoStr) return "";
+  const [y, m, d] = isoStr.split("-");
+  return `${d}.${m}.${y}`;
 }
-function wireDevices(){
-  document.querySelectorAll("[data-device]").forEach(input=>input.onchange=()=>{
-    selected[input.dataset.device]=input.value;
-    if(location.hash.startsWith("#doc-")){const model=byId[input.dataset.device];$("#deviceStatus").innerHTML=devicePanel(model);wireDevices()}else renderStatus();
-  });
-  document.querySelectorAll("[data-book]").forEach(button=>button.onclick=()=>{
-    if(!liveOk)return;
-    const device=fleet.instances.find(item=>item.id===button.dataset.book);
-    L.openUsage(device,byId[device.modelId],{staff:config.responsiblePeople,
-      save:(id,payload)=>L.request(`/api/instances/${encodeURIComponent(id)}/booking`,{method:"POST",body:JSON.stringify(payload)}),
-      onSaved:()=>poll(true),onConflict:()=>poll(true),onClose:()=>{if(location.hash.startsWith("#doc-")&&$("#deviceStatus")&&byId[device.modelId]){$("#deviceStatus").innerHTML=devicePanel(byId[device.modelId]);wireDevices()}else route()}});
-  });
+
+function openDlg(id){
+  const r=byId[id],cur=st(id);let pick=cur.state;
+  const host=$("#dlgHost");
+  host.innerHTML=`<div class="scrim" id="scrim"><form class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT">
+    <h2 id="dlgT">${esc(r.name)}</h2><p class="sub">${esc(r.maker)} · ${r.cell}</p>
+    <div class="choices">${Object.entries(STATES).map(([k,v])=>`<button type="button" class="choice ${v.cls}" data-k="${k}" aria-pressed="${pick===k}">${v.label}</button>`).join("")}</div>
+    <label class="field" id="pf">Responsible person<input id="person" maxlength="60" placeholder="e.g. Person ABC" value="${esc(cur.state!=="free"?cur.person||"":"")}"></label>
+    <label class="field" id="nf"><span id="nl">Note</span><input id="note" maxlength="80" placeholder="" value="${esc(cur.state!=="free"?cur.note||"":"")}"></label>
+    <label class="field" id="tf" hidden>Lab token<input id="token" type="password" autocomplete="off"></label>
+    <p class="err" id="err" hidden></p>
+    <div class="actions"><button type="button" class="btn" id="cancel">Cancel</button><button class="btn primary" id="save">Save</button></div>
+  </form></div>`;
+  const sync=()=>{document.querySelectorAll(".choice").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===pick)));
+    $("#pf").hidden=pick==="free";$("#nf").hidden=pick==="free";
+    $("#nl").textContent=pick==="occ"?"Reason":"Project or note (optional)";
+    $("#note").placeholder=pick==="occ"?"e.g. Maintenance, Lecture RO3 until 16:00":"e.g. Pick-and-place thesis";};
+  sync();
+  document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{pick=b.dataset.k;sync();if(pick!=="free")$("#person").focus()});
+  const close=()=>{host.innerHTML=""};
+  $("#cancel").onclick=close;
+  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  document.addEventListener("keydown",function k(e){if(e.key==="Escape"){close();document.removeEventListener("keydown",k)}});
+  $("#dlg").onsubmit=async e=>{e.preventDefault();
+    const person=$("#person").value.trim(),note=$("#note").value.trim(),err=$("#err");
+    if(pick!=="free"&&!person){err.textContent="Enter the name of the responsible person.";err.hidden=false;return}
+    const body={state:pick,person:pick!=="free"?person:"",date:pick!=="free"?cur.date||"":"",note:pick==="free"?"":note,since:pick==="free"?0:Date.now()};
+    const same=cur.state===body.state&&(cur.person||"")===body.person&&(cur.note||"")===body.note;
+    if(same){close();return}
+    const tk=$("#token").value.trim();if(tk){try{localStorage.setItem("lab-token",tk)}catch(_){}}
+    $("#save").disabled=true;$("#save").textContent="Saving…";
+    try{await window.LAB_SAVE(id,body);close();route()} // redraw: the poll during save skipped it while the dialog was open
+    catch(x){$("#save").disabled=false;$("#save").textContent="Save";
+      if(x&&x.code==="permission_denied")$("#tf").hidden=false;
+      err.textContent=x&&x.code==="permission_denied"?"This lab requires a token to change the status. Enter it and save again.":"The status could not be saved. Check your connection and try again.";err.hidden=false}
+  };
 }
+
 
 /* ---------- Markdown-based docs (robots with docFile) ---------- */
 const mdCache={};
@@ -124,9 +147,9 @@ async function renderMdDoc(r){
      ${ROBOTS.map(x=>`<a href="#doc-${x.id}" class="${x.id===id?"cur":""}">${esc(x.name)}</a>${x.id===id?'<div id="mdToc"></div>':""}`).join("")}</aside>
    <article><div class="crumbs"><span><a href="#fleet">Robots</a> » ${esc(r.maker)} » ${esc(r.name)}</span><span>Setup guide</span></div>
      <div class="prose" id="mdBody"><h1>${esc(r.name)} setup</h1><p class="doc-status">Loading documentation…</p></div></article></div>`;
-  let md=mdCache[file];
+  let md=mdCache[id];
   if(md==null){
-    try{const x=await fetch(file,{cache:"no-cache"});if(!x.ok)throw 0;md=mdCache[file]=await x.text()}
+    try{const x=await fetch(file,{cache:"no-cache"});if(!x.ok)throw 0;md=mdCache[id]=await x.text()}
     catch(_){md=null}
   }
   if(location.hash!=="#doc-"+id)return;
@@ -165,12 +188,12 @@ async function renderMdDoc(r){
   // title + status row
   const h1=tmp.querySelector("h1");
   const status=document.createElement("div");status.className="doc-status";
-  status.id="deviceStatus"; status.innerHTML=devicePanel(r);
+  status.innerHTML=`${pill(id)}<span>${r.cell}</span><span>IP ${esc(r.ip)}</span><a href="#status" style="color:var(--brand)">Book this robot →</a>`;
   if(h1){h1.after(status)}else{tmp.prepend(status);tmp.insertAdjacentHTML("afterbegin",`<h1>${esc(r.name)} setup</h1>`)}
   body.innerHTML="";body.append(...tmp.childNodes);
   body.insertAdjacentHTML("beforeend",`<div class="pager">${prev?`<button type="button" data-go="doc-${prev.id}">← ${esc(prev.name)}</button>`:"<span></span>"}${next?`<button type="button" data-go="doc-${next.id}">${esc(next.name)} →</button>`:"<span></span>"}</div>`);
   $("#mdToc").innerHTML=toc.map(([t,a,x])=>`<a class="sub${t==="H3"?" sub2":""}" href="#doc-${id}" data-sec="${a}">${esc(x)}</a>`).join("");
-  wireDoc(); wireDevices();
+  wireDoc();
 }
 function wireDoc(){
   document.querySelectorAll("[data-sec]").forEach(a=>a.onclick=e=>{e.preventDefault();const t=document.getElementById(a.dataset.sec);if(t)t.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"})});
@@ -184,38 +207,45 @@ function wireDoc(){
 /* ---------- docs: every robot has a Markdown guide in docs/<id>.md ---------- */
 function renderDoc(id){return renderMdDoc(byId[id])}
 
-
-function redraw(changed=true,catalogChanged=false){
-  connection();counts();
-  if(!changed)return;
-  if($("#dlgHost").innerHTML||document.activeElement?.id==="q")return;
-  const doc=location.hash.startsWith("#doc-")?byId[location.hash.slice(5)]:null;
-  if(doc&&$("#deviceStatus")&&!catalogChanged){$("#deviceStatus").innerHTML=devicePanel(doc);wireDevices()}else route();
+/* ---------- shared status: backend API, with localStorage fallback ---------- */
+const API="api/status";
+function setLive(state){const b=$("#liveBadge"),t=$("#liveText");
+  b.classList.toggle("off",state!=="ok");
+  t.textContent={ok:"Live status",local:"Local only",slow:"Server unreachable"}[state]||"Connecting…"}
+function apply(obj){
+  for(const k in status)delete status[k];
+  for(const [id,v] of Object.entries(obj||{}))if(byId[id])status[id]=v;
+  const onDoc=(location.hash||"").startsWith("#doc-"), typing=document.activeElement&&document.activeElement.id==="q";
+  if($("#dlgHost").innerHTML||typing)counts();
+  else if(onDoc){const ds=document.querySelector(".doc-status .pill");if(ds)ds.outerHTML=pill(location.hash.slice(5));counts()}
+  else route();
 }
-async function poll(force=false){
-  if(polling){await polling;if(force)return poll();return}
-  polling=(async()=>{
-    let changed=false,catalogChanged=false;
-    try{
-      const [next,nextConfig]=await Promise.all([L.request("api/fleet"),L.request("api/config")]);
-      if(!Array.isArray(next.models)||!Array.isArray(next.instances))throw new Error("Invalid inventory response");
-      changed=!liveOk||!loaded||next.revision!==fleet.revision||nextConfig.publicEdit!==config.publicEdit;
-      catalogChanged=JSON.stringify(next.models.map(model=>[model.id,model.version]))!==JSON.stringify(fleet.models.map(model=>[model.id,model.version]));
-      fleet=next;config=nextConfig;ROBOTS=fleet.models;byId=Object.fromEntries(ROBOTS.map(model=>[model.id,model]));
-      loaded=true;liveOk=true;
-      try{sessionStorage.setItem("lab-fleet-snapshot",JSON.stringify(fleet))}catch(_){}
-    }catch(_){changed=liveOk;liveOk=false}
-    redraw(changed,catalogChanged);
-  })().finally(()=>{polling=null});
-  return polling;
-}
-try{
-  const cached=JSON.parse(sessionStorage.getItem("lab-fleet-snapshot")||"null");
-  if(cached&&Array.isArray(cached.models)&&Array.isArray(cached.instances)){
-    fleet=cached;ROBOTS=fleet.models;byId=Object.fromEntries(ROBOTS.map(model=>[model.id,model]));loaded=true;
+function loadLocal(){try{return JSON.parse(localStorage.getItem("lab-status")||"{}")}catch(_){return{}}}
+function saveLocal(){try{localStorage.setItem("lab-status",JSON.stringify(status))}catch(_){}}
+let lastJSON="";
+async function poll(){
+  try{
+    const r=await fetch(API,{cache:"no-store"});
+    if(!r.ok)throw new Error(r.status);
+    const txt=await r.text();
+    if(!col){col=true;liveOk=true}
+    setLive("ok");
+    if(txt!==lastJSON){lastJSON=txt;apply(JSON.parse(txt))}
+  }catch(e){
+    if(col){setLive("slow")}else{setLive("local");apply(loadLocal())}
   }
-}catch(_){}
-connection();route();poll();
+}
+/* save hook used by the dialog */
+window.LAB_SAVE=async(id,body)=>{
+  if(col){
+    const r=await fetch(API+"/"+encodeURIComponent(id),{method:"PUT",headers:{"Content-Type":"application/json","X-Lab-Token":(()=>{try{return localStorage.getItem("lab-token")||""}catch(_){return""}})()},body:JSON.stringify(body)});
+    if(!r.ok)throw {code:r.status===403?"permission_denied":"error"};
+    await poll();
+  }else{status[id]=body;saveLocal();route()}
+};
+fetch("api/config",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(c=>{if(c){canEdit=!!c.publicEdit;if(location.hash==="#status")route()}}).catch(()=>{});
+route();
+poll();
 setInterval(poll,5000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)poll()});
 })();

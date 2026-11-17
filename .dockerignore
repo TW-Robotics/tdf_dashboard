@@ -1,8 +1,0 @@
-.git
-.venv
-**/__pycache__
-**/*.pyc
-backend/data/status.json
-backend/data/*.tmp
-backend/data/*.sqlite3*
-backend/data/*.pre-sqlite-*.json
