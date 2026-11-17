@@ -12,9 +12,7 @@ function selectedDevice(model, devices=devicesFor(model.id)){
 }
 function aggregate(model){
   const devices=devicesFor(model.id), free=devices.filter(device=>L.state(device)==="free").length;
-  const color=!devices.length||devices.some(device=>L.state(device)==="unknown")?"neutral"
-    :free===devices.length?"free":free>0?"use":"occ";
-  return `<span class="pill ${color}">${free} / ${devices.length} free</span>`;
+  return `<span class="pill neutral">${free} / ${devices.length} free</span>`;
 }
 function counts(){
   $("#cFleet").textContent=loaded?ROBOTS.length:"";
